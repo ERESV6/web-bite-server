@@ -35,7 +35,6 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast")
 .WithOpenApi();
-// asd
 
 app.Run();
 
