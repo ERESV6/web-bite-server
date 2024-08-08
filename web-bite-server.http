@@ -1,0 +1,6 @@
+@web_bite_server_HostAddress = http://localhost:5126
+
+GET {{web_bite_server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
