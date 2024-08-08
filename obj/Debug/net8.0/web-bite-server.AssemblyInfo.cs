@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("web-bite-server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2c51b75647408cd90740988055d16c11bf8d2af0")]
 [assembly: System.Reflection.AssemblyProductAttribute("web-bite-server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("web-bite-server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
