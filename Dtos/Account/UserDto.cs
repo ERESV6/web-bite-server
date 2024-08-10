@@ -1,19 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace web_bite_server.Dtos.Account
 {
-    public class RegisterDto
+    public class UserDto
     {
-        [Required]
         public required string Username { get; set; }
-        [Required]
-        [EmailAddress]
         public required string Email { get; set; }
-        [Required]
-        public required string Password { get; set; }
+        public required  string Token { get; set; }
     }
 }

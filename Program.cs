@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using web_bite_server.Data;
+using web_bite_server.Interfaces;
 using web_bite_server.Models;
+using web_bite_server.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,8 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options => {
     options.Password.RequiredLength = 4;    
 }).AddEntityFrameworkStores<ApplicationDBContext>();
 
+
+// Change to cookies
 builder.Services.AddAuthentication(options => {
     options.DefaultAuthenticateScheme =
     options.DefaultChallengeScheme =
@@ -40,6 +44,8 @@ builder.Services.AddAuthentication(options => {
     };
 });
 //.AddCookie();
+
+builder.Services.AddScoped<ITokenService,TokenService>();
 
 var app = builder.Build();
 
