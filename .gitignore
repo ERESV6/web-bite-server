@@ -33,6 +33,7 @@ bld/
 [Bb]in/
 [Oo]bj/
 obj/*
+[Mm]igrations
 [Ll]og/
 [Ll]ogs/
 
