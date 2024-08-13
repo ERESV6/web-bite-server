@@ -35,9 +35,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options => {
 
 builder.Services.AddAuthentication(o => 
 {
-    o.DefaultScheme =
     o.DefaultChallengeScheme = 
-    o.DefaultForbidScheme =
     o.DefaultSignInScheme = 
     o.DefaultSignOutScheme =
     CookieAuthenticationDefaults.AuthenticationScheme;

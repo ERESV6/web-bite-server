@@ -95,7 +95,6 @@ namespace web_bite_server.Controllers
         }
 
         [HttpPost("logout")]
-        [Authorize]
         [Produces("text/plain")]
         public async Task<ActionResult<string>> Logout()
         {
