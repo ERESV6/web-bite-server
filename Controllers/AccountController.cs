@@ -12,14 +12,17 @@ namespace web_bite_server.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
-        public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
+        [Produces("text/plain")]
+        public async Task<ActionResult<string>> Register([FromBody] RegisterDto registerDto)
         {
             try
             {
@@ -43,12 +46,12 @@ namespace web_bite_server.Controllers
                     {
                         return Ok("User created");
                     } else {
-                        return StatusCode(404, roleResult.Errors);
+                        return StatusCode(500, roleResult.Errors);
                     }
                 }
                 else
                 {
-                    return StatusCode(404, createdUser.Errors);
+                    return StatusCode(500, createdUser.Errors);
                 }
             }
             catch (Exception e)
@@ -58,11 +61,17 @@ namespace web_bite_server.Controllers
         }
     
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+        [Produces("application/json")]
+        public async Task<ActionResult<UserDto>> Login([FromBody] LoginDto loginDto)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
+            }
+
+            if (_signInManager.IsSignedIn(_httpContextAccessor.HttpContext.User))
+            {
+                return Ok("Already logged in");
             }
 
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
@@ -78,15 +87,39 @@ namespace web_bite_server.Controllers
                 return Unauthorized("Email or password incorrect");
             }
 
-            return Ok("User logged in");
+            return Ok(new UserDto
+            {
+                Username = user.UserName,
+                Email = user.Email
+            });
         }
 
         [HttpPost("logout")]
         [Authorize]
-        public async Task<IActionResult> Logout()
+        [Produces("text/plain")]
+        public async Task<ActionResult<string>> Logout()
         {
             await _signInManager.SignOutAsync();
             return Ok("User logged out");
+        }
+    
+        [HttpGet("user-info")]
+        [Authorize]
+        [Produces("application/json")]
+        public async Task<ActionResult<UserDto>> UserInfo()
+        {
+            var user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
+            
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(new UserDto
+            {
+                Username = user.UserName,
+                Email = user.Email
+            });
         }
     }
 }
