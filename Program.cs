@@ -33,12 +33,28 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options => {
     options.User.RequireUniqueEmail = true;
 }).AddEntityFrameworkStores<ApplicationDBContext>();
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
+builder.Services.AddAuthentication(o => 
+{
+    o.DefaultScheme =
+    o.DefaultAuthenticateScheme =
+    o.DefaultChallengeScheme = 
+    o.DefaultForbidScheme =
+    o.DefaultSignInScheme = 
+    o.DefaultSignOutScheme =
+    CookieAuthenticationDefaults.AuthenticationScheme;
+}).AddCookie(options =>
+    {      
         options.Cookie.HttpOnly = true;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
-        options.SlidingExpiration = true;       
+        options.SlidingExpiration = true;  
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+        };           
     });
 
 var app = builder.Build();
