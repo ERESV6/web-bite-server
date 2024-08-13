@@ -1,14 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using web_bite_server.Dtos.Account;
-using web_bite_server.Interfaces;
 using web_bite_server.Models;
-using web_bite_server.Service;
 
 namespace web_bite_server.Controllers
 {
@@ -18,12 +12,10 @@ namespace web_bite_server.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
-        private readonly ITokenService _tokenService;
-        public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, ITokenService tokenService)
+        public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
-            _tokenService = tokenService;
         }
 
         [HttpPost("register")]
@@ -51,13 +43,12 @@ namespace web_bite_server.Controllers
                     {
                         return Ok("User created");
                     } else {
-                        // Check status codes, and analize code
-                        return StatusCode(500, roleResult.Errors);
+                        return StatusCode(404, roleResult.Errors);
                     }
                 }
                 else
                 {
-                    return StatusCode(500, createdUser.Errors);
+                    return StatusCode(404, createdUser.Errors);
                 }
             }
             catch (Exception e)
@@ -74,26 +65,28 @@ namespace web_bite_server.Controllers
                 return BadRequest(ModelState);
             }
 
-            var user = await _userManager.Users.FirstOrDefaultAsync(user => user.UserName == loginDto.Username.ToLower());
+            var user = await _userManager.FindByEmailAsync(loginDto.Email);
 
             if (user == null)
             {
-                return Unauthorized("Invalid username");
-            }
+                return Unauthorized("Invalid email");
+            }          
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
-
+            var result = await _signInManager.PasswordSignInAsync(user.UserName, loginDto.Password, false, false);
             if (!result.Succeeded)
             {
-                return Unauthorized("Username or password incorrect");
+                return Unauthorized("Email or password incorrect");
             }
 
-            return Ok(new UserDto
-            {
-                Username = user.UserName,
-                Email = user.Email,
-                Token = _tokenService.CreateToken(user)
-            });
+            return Ok("User logged in");
+        }
+
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok("User logged out");
         }
     }
 }

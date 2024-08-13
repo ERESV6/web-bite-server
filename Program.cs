@@ -1,11 +1,8 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using web_bite_server.Data;
-using web_bite_server.Interfaces;
 using web_bite_server.Models;
-using web_bite_server.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,37 +15,19 @@ builder.Services.AddDbContext<ApplicationDBContext>(options => {
     options.UseSqlServer(builder.Configuration.GetConnectionString("WebBiteConnectionString"));
 });
 
-builder.Services.AddIdentity<AppUser, IdentityRole>(options => {
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 4;    
+builder.Services.AddIdentity<AppUser, IdentityRole>(options => {    
+    options.User.RequireUniqueEmail = true;
 }).AddEntityFrameworkStores<ApplicationDBContext>();
 
-
-// Change to cookies
-builder.Services.AddAuthentication(options => {
-    options.DefaultAuthenticateScheme =
-    options.DefaultChallengeScheme =
-    options.DefaultForbidScheme = 
-    options.DefaultScheme = 
-    options.DefaultSignInScheme = 
-    options.DefaultSignOutScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options => {
-    options.TokenValidationParameters = new TokenValidationParameters
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
     {
-        ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["JWT:Issuer"],
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["JWT:Audience"],
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:SigningKey"]))
-    };
-});
-//.AddCookie();
-
-builder.Services.AddScoped<ITokenService,TokenService>();
+        options.Cookie.HttpOnly = true;
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+        options.SlidingExpiration = true;       
+    });
 
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
