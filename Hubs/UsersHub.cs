@@ -9,6 +9,7 @@ namespace web_bite_server.Hubs
     public class UsersHub : Hub<IUsersHub>
     {
         private static readonly List<CardGameActiveUserDto> SignalRUsers = [];
+        
         public override async Task OnConnectedAsync()
         {          
             var id = Context.ConnectionId;
@@ -17,7 +18,7 @@ namespace web_bite_server.Hubs
             {
                 SignalRUsers.Add(new CardGameActiveUserDto{ ConnectionId = id, UserName = userName });
             }
-            await Clients.All.UserConnection($"{userName} has joined");
+            await Clients.All.UserConnection($"{userName} has joined", SignalRUsers);
             await base.OnConnectedAsync();
         }
 
@@ -26,15 +27,10 @@ namespace web_bite_server.Hubs
             var item = SignalRUsers.FirstOrDefault(x => x.ConnectionId == Context.ConnectionId);
             if (item != null)
             {
-                await Clients.All.UserConnection($"{item.UserName} disconnected.");
                 SignalRUsers.Remove(item);
+                await Clients.All.UserConnection($"{item.UserName} disconnected.", SignalRUsers);
             }
             await base.OnDisconnectedAsync(exception);          
-        }
-
-        public async Task GetAllActiveUsers()
-        {
-            await Clients.Caller.GetAllActiveUsers(SignalRUsers);
         }
     }
 }
