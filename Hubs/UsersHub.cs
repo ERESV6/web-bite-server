@@ -12,13 +12,13 @@ namespace web_bite_server.Hubs
         
         public override async Task OnConnectedAsync()
         {          
-            var id = Context.ConnectionId;
+            var connectionId = Context.ConnectionId;
             var userName = Context.User?.Identity?.Name;
-            if (!SignalRUsers.Any(x => x.ConnectionId == id) && userName != null)
+            if (!SignalRUsers.Any(x => x.ConnectionId == connectionId) && userName != null)
             {
-                SignalRUsers.Add(new CardGameActiveUserDto{ ConnectionId = id, UserName = userName });
+                SignalRUsers.Add(new CardGameActiveUserDto{ ConnectionId = connectionId, UserName = userName });
             }
-            await Clients.All.UserConnection($"{userName} has joined", SignalRUsers);
+            await Clients.All.UserConnection($"{userName} has joined", SignalRUsers, connectionId);
             await base.OnConnectedAsync();
         }
 
@@ -28,9 +28,9 @@ namespace web_bite_server.Hubs
             if (item != null)
             {
                 SignalRUsers.Remove(item);
-                await Clients.All.UserConnection($"{item.UserName} disconnected.", SignalRUsers);
+                await Clients.All.UserConnection($"{item.UserName} leave.", SignalRUsers, null);
             }
             await base.OnDisconnectedAsync(exception);          
-        }
+        }   
     }
 }
