@@ -7,7 +7,7 @@ namespace web_bite_server.interfaces.CardGame
     [SignalRHub("")]
     public interface IUsersHub
     {
-        Task UserConnection(string userName, List<CardGameActiveUserDto> activeUsers, string? connectionId);
+        Task UserConnection(string userName, List<CardGameActiveUserDto> activeUsers);
         Task RequestGameConnection(string userConnectionId);
         Task CancelGameConnection(string userConnectionId);
         Task AcceptGameConnection(string userConnectionId);

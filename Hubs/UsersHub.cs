@@ -15,6 +15,12 @@ namespace web_bite_server.Hubs
         UserManager<AppUser> _userManager = userManager;
         ApplicationDBContext _dBContext = dBContext;
 
+        /**
+            - przeanalizować logikę, ogarnąć czy można zmniejszyć ilość strzałów na bazę            
+            - dodać repository
+            - sprawdzić czy można coś wyciągnąc stąd i api requestami ogarnać (raczej nie)
+         */
+
         public override async Task OnConnectedAsync()
         {          
             var connectionId = Context.ConnectionId;
@@ -39,18 +45,13 @@ namespace web_bite_server.Hubs
                         {
                             gameConnection.ConnectionId = connectionId;
                             gameConnection.UserToId = string.Empty;
+                            gameConnection.UserToRequestPendingId = string.Empty;
                         }                        
                     } 
 
                     await _userManager.UpdateAsync(appUser);            
                     await _dBContext.SaveChangesAsync();    
-
-                    var updatedConnections = await _dBContext.GameConnection.ToListAsync();
-                    var asd = updatedConnections.Select(c => new CardGameActiveUserDto {
-                        ConnectionId = c.ConnectionId,
-                        UserName = c.AppUserName
-                    }).ToList();
-                    await Clients.All.UserConnection($"{userName} has joined", asd, connectionId);            
+                    await SendConnectionMessage($"{userName} has joined.");         
                 }
             }                                                           
             
@@ -67,19 +68,25 @@ namespace web_bite_server.Hubs
                 if (appUser != null)
                 {
                     appUser.GameConnectionId = null; 
-                    await _userManager.UpdateAsync(appUser);  
                     _dBContext.GameConnection.Remove(connection);
-                    await _dBContext.SaveChangesAsync();    
-                    var updatedConnections = await _dBContext.GameConnection.ToListAsync();
-                    var asd = updatedConnections.Select(c => new CardGameActiveUserDto {
-                        ConnectionId = c.ConnectionId,
-                        UserName = c.AppUserName
-                    }).ToList();
-                    await Clients.All.UserConnection($"{userName} leave.", asd, null);                                       
+                    await _userManager.UpdateAsync(appUser);  
+                    await _dBContext.SaveChangesAsync();  
+                    await SendConnectionMessage($"{userName} leave.");                                    
                 }
             }    
             
             await base.OnDisconnectedAsync(exception);          
         }   
+
+        private async Task SendConnectionMessage(string message)
+        {
+            var updatedConnections = await _dBContext.GameConnection.ToListAsync();
+            var activeUsers = updatedConnections.Select(c => new CardGameActiveUserDto {
+                ConnectionId = c.ConnectionId,
+                UserName = c.AppUserName,
+                IsAvaliable = !(c.UserToId?.Length > 0 || c.UserToRequestPendingId?.Length > 0)
+            }).ToList();
+            await Clients.All.UserConnection(message, activeUsers);
+        }
     }
 }

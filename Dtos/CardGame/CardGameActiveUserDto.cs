@@ -8,5 +8,6 @@ namespace web_bite_server.Dtos.CardGame
         public required string ConnectionId { get; set; }
         [Required]
         public required string UserName { get; set; }
+        public bool IsAvaliable { get; set; } = true;
     }
 }
