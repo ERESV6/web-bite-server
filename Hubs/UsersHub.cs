@@ -15,12 +15,6 @@ namespace web_bite_server.Hubs
         UserManager<AppUser> _userManager = userManager;
         ApplicationDBContext _dBContext = dBContext;
 
-        /**
-            - przeanalizować logikę, ogarnąć czy można zmniejszyć ilość strzałów na bazę            
-            - dodać repository
-            - sprawdzić czy można coś wyciągnąc stąd i api requestami ogarnać (raczej nie)
-         */
-
         public override async Task OnConnectedAsync()
         {
             var connectionId = Context.ConnectionId;
@@ -62,6 +56,7 @@ namespace web_bite_server.Hubs
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
+            // dodać na ondisconnected wyszukania czy dany user miał pending, jak miał to odłączyć temu z pendingiem. pewnie to samo po połączeniu
             var userName = Context.User?.Identity?.Name;
             var connection = await _dBContext.GameConnection.FirstOrDefaultAsync(m => m.ConnectionId == Context.ConnectionId);
             if (connection != null && userName != null)
@@ -89,7 +84,8 @@ namespace web_bite_server.Hubs
                 UserName = c.AppUserName,
                 IsAvaliable = !(c.UserToId?.Length > 0 || c.UserToRequestPendingId?.Length > 0)
             }).ToList();
-            await Clients.All.UserConnection(message, activeUsers);
+            await Clients.Others.UserConnection(message);
+            await Clients.All.UserConnections(activeUsers);
         }
     }
 }

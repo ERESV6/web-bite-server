@@ -20,22 +20,26 @@ namespace web_bite_server.Controllers
         private readonly ApplicationDBContext _dBContext = dBContext;
         private readonly UserManager<AppUser> _userManager = userManager;
 
-        [HttpGet("request-connection")]
+        [HttpPost("request-connection")]
         [Produces("application/json")]
-        public async Task<ActionResult<bool>> RequestGameConnection([FromQuery] string userConnectionId, [FromQuery] string userToConnectionId)
+        public async Task<ActionResult<CardGameConnectionDto>> RequestGameConnection([FromBody] CardGameConnectionDto cardGameConnectionDto)
         {
-            var userConnection = await _dBContext.GameConnection.FirstOrDefaultAsync(gc => gc.ConnectionId == userConnectionId);
-            var userToConnection = await _dBContext.GameConnection.FirstOrDefaultAsync(gc => gc.ConnectionId == userToConnectionId);
+            var userConnection = await _dBContext.GameConnection.FirstOrDefaultAsync(gc => gc.ConnectionId == cardGameConnectionDto.UserConnectionId);
+            var userToConnection = await _dBContext.GameConnection.FirstOrDefaultAsync(gc => gc.ConnectionId == cardGameConnectionDto.UserToConnectionId);
 
             if (
-                userConnection != null && userConnection.UserToId == null && userConnection.UserToRequestPendingId == null &&
-                userToConnection != null && userToConnection.UserToId == null && userToConnection.UserToRequestPendingId == null
+                userConnection != null && string.IsNullOrEmpty(userConnection.UserToId) && string.IsNullOrEmpty(userConnection.UserToRequestPendingId) &&
+                userToConnection != null && string.IsNullOrEmpty(userToConnection.UserToId) && string.IsNullOrEmpty(userToConnection.UserToRequestPendingId)
                 )
             {
                 userConnection.UserToRequestPendingId = userToConnection.AppUserId;
                 userToConnection.UserToRequestPendingId = userConnection.AppUserId;
                 await _dBContext.SaveChangesAsync();
-                await _hubContext.Clients.Client(userToConnectionId).RequestGameConnection(userConnectionId);
+                await _hubContext.Clients.Client(cardGameConnectionDto.UserToConnectionId).RequestGameConnection(new CardGameConnectionDto
+                {
+                    UserConnectionId = cardGameConnectionDto.UserToConnectionId,
+                    UserToConnectionId = cardGameConnectionDto.UserConnectionId
+                });
                 // do repository      
                 var updatedConnections = await _dBContext.GameConnection.ToListAsync();
                 var activeUsers = updatedConnections.Select(c => new CardGameActiveUserDto
@@ -44,19 +48,44 @@ namespace web_bite_server.Controllers
                     UserName = c.AppUserName,
                     IsAvaliable = !(c.UserToId?.Length > 0 || c.UserToRequestPendingId?.Length > 0)
                 }).ToList();
-                await _hubContext.Clients.All.UserConnection("połączenia elo do zmiany", activeUsers);
+                await _hubContext.Clients.All.UserConnections(activeUsers);
+                return Ok(cardGameConnectionDto);
+            }
+            return Ok(null);
+        }
+
+        [HttpPost("decline-connection")]
+        [Produces("application/json")]
+        public async Task<ActionResult<bool>> DeclineGameConnection([FromBody] CardGameConnectionDto cardGameConnectionDto)
+        {
+            var userConnection = await _dBContext.GameConnection.FirstOrDefaultAsync(gc => gc.ConnectionId == cardGameConnectionDto.UserConnectionId);
+            var userToConnection = await _dBContext.GameConnection.FirstOrDefaultAsync(gc => gc.ConnectionId == cardGameConnectionDto.UserToConnectionId);
+
+            if (
+                userConnection != null && string.IsNullOrEmpty(userConnection.UserToId) && !string.IsNullOrEmpty(userConnection.UserToRequestPendingId) &&
+                userToConnection != null && string.IsNullOrEmpty(userToConnection.UserToId) && !string.IsNullOrEmpty(userToConnection.UserToRequestPendingId)
+                )
+            {
+                userConnection.UserToRequestPendingId = string.Empty;
+                userToConnection.UserToRequestPendingId = string.Empty;
+                await _dBContext.SaveChangesAsync();
+                await _hubContext.Clients.Client(cardGameConnectionDto.UserToConnectionId).DeclineGameConnection();
+                // do repository      
+                var updatedConnections = await _dBContext.GameConnection.ToListAsync();
+                var activeUsers = updatedConnections.Select(c => new CardGameActiveUserDto
+                {
+                    ConnectionId = c.ConnectionId,
+                    UserName = c.AppUserName,
+                    IsAvaliable = !(c.UserToId?.Length > 0 || c.UserToRequestPendingId?.Length > 0)
+                }).ToList();
+                await _hubContext.Clients.All.UserConnections(activeUsers);
                 return Ok(true);
             }
             return Ok(false);
         }
 
-        [HttpGet("cancel-connection")]
-        public async Task CancelGameConnection([FromQuery] string userConnectionId, [FromQuery] string userToConnectionId)
-        {
-            await _hubContext.Clients.Client(userToConnectionId).CancelGameConnection(userConnectionId);
-        }
-
-        [HttpGet("accept-connection")]
+        [HttpPost("accept-connection")]
+        [Produces("application/json")]
         public async Task<ActionResult<bool>> AcceptGameConnection()
         {
             var userAccept = await _userManager.GetUserAsync(HttpContext.User);
@@ -66,11 +95,11 @@ namespace web_bite_server.Controllers
             }
 
             var userAcceptGameConnection = await _dBContext.GameConnection.FirstOrDefaultAsync(gc => gc.Id == userAccept.GameConnectionId);
-            if (userAcceptGameConnection?.UserToRequestPendingId == null)
+            if (string.IsNullOrEmpty(userAcceptGameConnection?.UserToRequestPendingId))
             {
                 return NotFound("Accepting user connection not found");
             }
-            if (userAcceptGameConnection.UserToId != null)
+            if (!string.IsNullOrEmpty(userAcceptGameConnection.UserToId))
             {
                 return NotFound("Accepting User already connected with other user");
             }
@@ -86,7 +115,7 @@ namespace web_bite_server.Controllers
             {
                 return NotFound("Game requesting user connection not found");
             }
-            if (userReceiveGameConnection.UserToId != null)
+            if (!string.IsNullOrEmpty(userReceiveGameConnection.UserToId))
             {
                 return NotFound("Receiving User already connected with other user");
             }
@@ -98,17 +127,12 @@ namespace web_bite_server.Controllers
             userReceiveGameConnection.UserToId = userAccept.Id;
 
             await _dBContext.SaveChangesAsync();
-            await _hubContext.Clients.Client(userReceiveGameConnection.ConnectionId).AcceptGameConnection(userAcceptGameConnection.ConnectionId);
+            await _hubContext.Clients.Client(userReceiveGameConnection.ConnectionId).AcceptGameConnection();
             return Ok(true);
         }
 
-        [HttpGet("decline-connection")]
-        public async Task DeclineGameConnection([FromQuery] string userConnectionId, [FromQuery] string userToConnectionId)
-        {
-            await _hubContext.Clients.Client(userToConnectionId).DeclineGameConnection(userConnectionId);
-        }
-
         [HttpGet("check-game-connection")]
+        [Produces("application/json")]
         public async Task<ActionResult<bool>> CheckGameConnection()
         {
             var appUser = await _userManager.GetUserAsync(HttpContext.User);
