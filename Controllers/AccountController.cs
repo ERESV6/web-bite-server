@@ -12,12 +12,10 @@ namespace web_bite_server.Controllers
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, IHttpContextAccessor httpContextAccessor)
+        public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
-            _httpContextAccessor = httpContextAccessor;
         }
 
         [HttpPost("register")]
@@ -45,7 +43,9 @@ namespace web_bite_server.Controllers
                     if (roleResult.Succeeded)
                     {
                         return Ok("User created");
-                    } else {
+                    }
+                    else
+                    {
                         return StatusCode(500, roleResult.Errors);
                     }
                 }
@@ -59,7 +59,7 @@ namespace web_bite_server.Controllers
                 return StatusCode(500, e);
             }
         }
-    
+
         [HttpPost("login")]
         [Produces("application/json")]
         public async Task<ActionResult<UserDto>> Login([FromBody] LoginDto loginDto)
@@ -68,8 +68,7 @@ namespace web_bite_server.Controllers
             {
                 return BadRequest(ModelState);
             }
-
-            if (_signInManager.IsSignedIn(_httpContextAccessor.HttpContext.User))
+            if (_signInManager.IsSignedIn(HttpContext.User))
             {
                 return Ok("Already logged in");
             }
@@ -79,7 +78,7 @@ namespace web_bite_server.Controllers
             if (user == null)
             {
                 return Unauthorized("Invalid email");
-            }          
+            }
 
             var result = await _signInManager.PasswordSignInAsync(user.UserName, loginDto.Password, false, false);
             if (!result.Succeeded)
@@ -101,14 +100,14 @@ namespace web_bite_server.Controllers
             await _signInManager.SignOutAsync();
             return Ok("User logged out");
         }
-    
+
         [HttpGet("user-info")]
         [Authorize]
         [Produces("application/json")]
         public async Task<ActionResult<UserDto>> UserInfo()
         {
-            var user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext.User);
-            
+            var user = await _userManager.GetUserAsync(HttpContext.User);
+
             if (user == null)
             {
                 return NotFound();
