@@ -9,7 +9,7 @@ namespace web_bite_server.interfaces.CardGame
     {
         Task UserConnection(string userName);
         Task UserConnections(List<CardGameActiveUserDto> activeUsers);
-        Task RequestGameConnection(CardGameConnectionDto cardGameConnectionDto);
+        Task RequestGameConnection();
         Task AcceptGameConnection();
         Task DeclineGameConnection();
     }

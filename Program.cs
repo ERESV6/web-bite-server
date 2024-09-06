@@ -3,16 +3,18 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using web_bite_server.Data;
 using web_bite_server.Hubs;
+using web_bite_server.Interfaces.CardGame;
 using web_bite_server.Models;
+using web_bite_server.Repository;
 
-var  MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
 // Add cors
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
-        policy  =>
+        policy =>
         {
             policy.WithOrigins("http://localhost:4200")
             .AllowAnyMethod()
@@ -31,25 +33,27 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddSignalR();
 
-builder.Services.AddDbContext<ApplicationDBContext>(options => {
+builder.Services.AddDbContext<ApplicationDBContext>(options =>
+{
     options.UseSqlServer(builder.Configuration.GetConnectionString("WebBiteConnectionString"));
 });
 
-builder.Services.AddIdentity<AppUser, IdentityRole>(options => {    
+builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
+{
     options.User.RequireUniqueEmail = true;
 }).AddEntityFrameworkStores<ApplicationDBContext>();
 
-builder.Services.AddAuthentication(o => 
+builder.Services.AddAuthentication(o =>
 {
-    o.DefaultChallengeScheme = 
-    o.DefaultSignInScheme = 
+    o.DefaultChallengeScheme =
+    o.DefaultSignInScheme =
     o.DefaultSignOutScheme =
     CookieAuthenticationDefaults.AuthenticationScheme;
 }).AddCookie(options =>
-    {      
+    {
         options.Cookie.HttpOnly = true;
         options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
-        options.SlidingExpiration = true;  
+        options.SlidingExpiration = true;
         options.Events = new CookieAuthenticationEvents
         {
             OnRedirectToLogin = context =>
@@ -57,8 +61,10 @@ builder.Services.AddAuthentication(o =>
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return Task.CompletedTask;
             }
-        };           
+        };
     });
+
+builder.Services.AddScoped<ICardGameRepository, CardGameRepository>();
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.
