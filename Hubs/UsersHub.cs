@@ -29,7 +29,6 @@ namespace web_bite_server.Hubs
                         {
                             ConnectionId = connectionId,
                             AppUserId = appUser.Id,
-                            AppUserName = appUser.UserName
                         };
                         await _userManager.UpdateAsync(appUser);
                     }

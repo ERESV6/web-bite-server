@@ -32,8 +32,8 @@ namespace web_bite_server.Repository
             {
                 return;
             }
-            userConnection.UserToId = userToConnection.UserToRequestPendingId;
-            userToConnection.UserToId = userConnection.UserToRequestPendingId;
+            userConnection.UserToId = userConnection.UserToRequestPendingId;
+            userToConnection.UserToId = userToConnection.UserToRequestPendingId;
 
             userConnection.UserToRequestPendingId = string.Empty;
             userToConnection.UserToRequestPendingId = string.Empty;
@@ -54,12 +54,12 @@ namespace web_bite_server.Repository
 
         public async Task<List<CardGameActiveUserDto>> GetAllActiveGameConnectionsAsync()
         {
-            var gameConnections = await _dbContext.GameConnection.ToListAsync();
+            var gameConnections = await _dbContext.GameConnection.Include(i => i.AppUser).ToListAsync();
             // to mappers
             var activeGameConnections = gameConnections.Select(c => new CardGameActiveUserDto
             {
                 ConnectionId = c.ConnectionId,
-                UserName = c.AppUserName,
+                UserName = c.AppUser.UserName,
                 IsAvaliable = !(c.UserToId?.Length > 0 || c.UserToRequestPendingId?.Length > 0)
             }).ToList();
 
