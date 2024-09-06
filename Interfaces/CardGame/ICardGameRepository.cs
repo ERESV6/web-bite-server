@@ -12,5 +12,7 @@ namespace web_bite_server.Interfaces.CardGame
         Task UpdateConnectionUsersPendingIds(GameConnection? userConnection, GameConnection? userToConnection);
         Task CleanConnectionUsersPendingIds(GameConnection? userConnection, GameConnection? userToConnection);
         Task ConnectConnectionUsersIds(GameConnection? userConnection, GameConnection? userToConnection);
+        Task RemoveGameConnection(GameConnection connection);
+        Task UpdateUserGameConnectionOnReconnect(GameConnection connection, string connectionId);
     }
 }

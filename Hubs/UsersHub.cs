@@ -1,19 +1,17 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
-using web_bite_server.Data;
-using web_bite_server.Dtos.CardGame;
 using web_bite_server.interfaces.CardGame;
+using web_bite_server.Interfaces.CardGame;
 using web_bite_server.Models;
 
 namespace web_bite_server.Hubs
 {
     [Authorize]
-    public class UsersHub(UserManager<AppUser> userManager, ApplicationDBContext dBContext) : Hub<IUsersHub>
+    public class UsersHub(UserManager<AppUser> userManager, ICardGameRepository cardGameRepository) : Hub<IUsersHub>
     {
-        UserManager<AppUser> _userManager = userManager;
-        ApplicationDBContext _dBContext = dBContext;
+        private readonly UserManager<AppUser> _userManager = userManager;
+        private readonly ICardGameRepository _cardGameRepository = cardGameRepository;
 
         public override async Task OnConnectedAsync()
         {
@@ -33,41 +31,34 @@ namespace web_bite_server.Hubs
                             AppUserId = appUser.Id,
                             AppUserName = appUser.UserName
                         };
+                        await _userManager.UpdateAsync(appUser);
                     }
                     else
                     {
-                        var gameConnection = await _dBContext.GameConnection.FindAsync(appUser.GameConnectionId);
+                        var gameConnection = await _cardGameRepository.GetGameConnectionByGameConnectionId(appUser.GameConnectionId);
                         if (gameConnection != null)
                         {
-                            gameConnection.ConnectionId = connectionId;
-                            gameConnection.UserToId = string.Empty;
-                            gameConnection.UserToRequestPendingId = string.Empty;
+                            await _cardGameRepository.UpdateUserGameConnectionOnReconnect(gameConnection, connectionId);
                         }
                     }
-
-                    await _userManager.UpdateAsync(appUser);
-                    await _dBContext.SaveChangesAsync();
                     await SendConnectionMessage($"{userName} has joined.");
                 }
             }
-
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            // dodać na ondisconnected wyszukania czy dany user miał pending, jak miał to odłączyć temu z pendingiem. pewnie to samo po połączeniu
             var userName = Context.User?.Identity?.Name;
-            var connection = await _dBContext.GameConnection.FirstOrDefaultAsync(m => m.ConnectionId == Context.ConnectionId);
+            var connection = await _cardGameRepository.GetGameConnectionByConnectionId(Context.ConnectionId);
             if (connection != null && userName != null)
             {
                 var appUser = await _userManager.FindByNameAsync(userName);
                 if (appUser != null)
                 {
                     appUser.GameConnectionId = null;
-                    _dBContext.GameConnection.Remove(connection);
                     await _userManager.UpdateAsync(appUser);
-                    await _dBContext.SaveChangesAsync();
+                    await _cardGameRepository.RemoveGameConnection(connection);
                     await SendConnectionMessage($"{userName} leave.");
                 }
             }
@@ -77,13 +68,7 @@ namespace web_bite_server.Hubs
 
         private async Task SendConnectionMessage(string message)
         {
-            var updatedConnections = await _dBContext.GameConnection.ToListAsync();
-            var activeUsers = updatedConnections.Select(c => new CardGameActiveUserDto
-            {
-                ConnectionId = c.ConnectionId,
-                UserName = c.AppUserName,
-                IsAvaliable = !(c.UserToId?.Length > 0 || c.UserToRequestPendingId?.Length > 0)
-            }).ToList();
+            var activeUsers = await _cardGameRepository.GetAllActiveGameConnectionsAsync();
             await Clients.Others.UserConnection(message);
             await Clients.All.UserConnections(activeUsers);
         }

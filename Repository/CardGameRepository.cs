@@ -76,6 +76,18 @@ namespace web_bite_server.Repository
             return await _dbContext.GameConnection.FirstOrDefaultAsync(gc => gc.Id == gameConnectionId);
         }
 
+        public async Task RemoveGameConnection(GameConnection connection)
+        {
+            _dbContext.GameConnection.Remove(connection);
+            await _dbContext.SaveChangesAsync();
+        }
 
+        public async Task UpdateUserGameConnectionOnReconnect(GameConnection connection, string connectionId)
+        {
+            connection.ConnectionId = connectionId;
+            connection.UserToId = string.Empty;
+            connection.UserToRequestPendingId = string.Empty;
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }
