@@ -23,7 +23,7 @@ namespace web_bite_server.Controllers
         public async Task<ActionResult<bool>> RequestGameConnection([FromRoute] string userToConnectionId)
         {
             var appUser = await _userManager.GetUserAsync(HttpContext.User);
-            if (appUser?.GameConnectionId == null)
+            if (appUser == null || appUser?.GameConnectionId == null)
             {
                 return NotFound("User not found or is not connected to the game");
             }
@@ -37,7 +37,7 @@ namespace web_bite_server.Controllers
                 )
             {
                 await _cardGameRepository.UpdateConnectionUsersPendingIds(userConnection, userToConnection);
-                await _hubContext.Clients.Client(userToConnection.ConnectionId).RequestGameConnection();
+                await _hubContext.Clients.Client(userToConnection.ConnectionId).RequestGameConnection(appUser.UserName ?? "");
 
                 var allActiveGameConnections = await _cardGameRepository.GetAllActiveGameConnectionsAsync();
                 await _hubContext.Clients.All.UserConnections(allActiveGameConnections);
