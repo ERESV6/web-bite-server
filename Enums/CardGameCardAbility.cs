@@ -1,6 +1,6 @@
 namespace web_bite_server.Enums
 {
-    public enum GameCardAbility
+    public enum CardGameCardAbility
     {
         None,
         AddAttackToAll,

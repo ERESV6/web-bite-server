@@ -9,15 +9,15 @@ namespace web_bite_server.Data
     {
         public ApplicationDBContext(DbContextOptions dbContextOptions) : base(dbContextOptions) { }
 
-        public DbSet<GameConnection> GameConnection { get; set; }
-        public DbSet<GameCard> GameCard { get; set; }
+        public DbSet<CardGameConnection> CardGameConnection { get; set; }
+        public DbSet<CardGameCard> CardGameCard { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            builder.Entity<AppUser>().HasOne(u => u.GameConnection).WithOne(t => t.AppUser).HasForeignKey<GameConnection>(fk => fk.AppUserId);
-            builder.Entity<GameConnection>().HasOne(u => u.AppUser).WithOne(t => t.GameConnection).HasForeignKey<AppUser>(fk => fk.GameConnectionId);
+            builder.Entity<AppUser>().HasOne(u => u.CardGameConnection).WithOne(t => t.AppUser).HasForeignKey<CardGameConnection>(fk => fk.AppUserId);
+            builder.Entity<CardGameConnection>().HasOne(u => u.AppUser).WithOne(t => t.CardGameConnection).HasForeignKey<AppUser>(fk => fk.CardGameConnectionId);
 
             List<IdentityRole> roles =
             [

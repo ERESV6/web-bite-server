@@ -8,10 +8,10 @@ using web_bite_server.Models;
 namespace web_bite_server.Hubs
 {
     [Authorize]
-    public class UsersHub(UserManager<AppUser> userManager, ICardGameRepository cardGameRepository) : Hub<IUsersHub>
+    public class CardGameHub(UserManager<AppUser> userManager, ICardGameConnectionRepository cardGameRepository) : Hub<ICardGameHub>
     {
         private readonly UserManager<AppUser> _userManager = userManager;
-        private readonly ICardGameRepository _cardGameRepository = cardGameRepository;
+        private readonly ICardGameConnectionRepository _cardGameRepository = cardGameRepository;
 
         public override async Task OnConnectedAsync()
         {
@@ -23,9 +23,9 @@ namespace web_bite_server.Hubs
                 var appUser = await _userManager.FindByNameAsync(userName);
                 if (appUser != null)
                 {
-                    if (appUser.GameConnectionId == null)
+                    if (appUser.CardGameConnectionId == null)
                     {
-                        appUser.GameConnection = new GameConnection
+                        appUser.CardGameConnection = new CardGameConnection
                         {
                             ConnectionId = connectionId,
                             AppUserId = appUser.Id,
@@ -34,10 +34,10 @@ namespace web_bite_server.Hubs
                     }
                     else
                     {
-                        var gameConnection = await _cardGameRepository.GetGameConnectionByGameConnectionId(appUser.GameConnectionId);
-                        if (gameConnection != null)
+                        var CardGameConnection = await _cardGameRepository.GetCardGameConnectionByCardGameConnectionId(appUser.CardGameConnectionId);
+                        if (CardGameConnection != null)
                         {
-                            await _cardGameRepository.UpdateUserGameConnectionOnReconnect(gameConnection, connectionId);
+                            await _cardGameRepository.UpdateUserCardGameConnectionOnReconnect(CardGameConnection, connectionId);
                         }
                     }
                     await SendConnectionMessage($"{userName} has joined.");
@@ -51,15 +51,15 @@ namespace web_bite_server.Hubs
             var userName = Context.User?.Identity?.Name;
             await SendConnectionMessage($"{userName} leave.");
             // var userName = Context.User?.Identity?.Name;
-            // var connection = await _cardGameRepository.GetGameConnectionByConnectionId(Context.ConnectionId);
+            // var connection = await _cardGameRepository.GetCardGameConnectionByConnectionId(Context.ConnectionId);
             // if (connection != null && userName != null)
             // {
             //     var appUser = await _userManager.FindByNameAsync(userName);
             //     if (appUser != null)
             //     {
-            //         appUser.GameConnectionId = null;
+            //         appUser.CardGameConnectionId = null;
             //         await _userManager.UpdateAsync(appUser);
-            //         await _cardGameRepository.RemoveGameConnection(connection);
+            //         await _cardGameRepository.RemoveCardGameConnection(connection);
             //         await SendConnectionMessage($"{userName} leave.");
             //     }
             // }
@@ -69,7 +69,7 @@ namespace web_bite_server.Hubs
 
         private async Task SendConnectionMessage(string message)
         {
-            var activeUsers = await _cardGameRepository.GetAllActiveGameConnectionsAsync();
+            var activeUsers = await _cardGameRepository.GetAllActiveCardGameConnectionsAsync();
             await Clients.Others.UserConnection(message);
             await Clients.All.UserConnections(activeUsers);
         }

@@ -4,7 +4,7 @@ namespace web_bite_server.Models
 {
     public class AppUser : IdentityUser
     {
-        public int? GameConnectionId { get; set; }
-        public GameConnection? GameConnection {get; set;}
+        public int? CardGameConnectionId { get; set; }
+        public CardGameConnection? CardGameConnection { get; set; }
     }
 }

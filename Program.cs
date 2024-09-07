@@ -64,7 +64,7 @@ builder.Services.AddAuthentication(o =>
         };
     });
 
-builder.Services.AddScoped<ICardGameRepository, CardGameRepository>();
+builder.Services.AddScoped<ICardGameConnectionRepository, CardGameConnectionRepository>();
 builder.Services.AddScoped<ICardGameCardRepository, CardGameCardRepository>();
 
 var app = builder.Build();
@@ -81,6 +81,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<UsersHub>("users-hub");
+app.MapHub<CardGameHub>("card-game-hub");
 
 app.Run();

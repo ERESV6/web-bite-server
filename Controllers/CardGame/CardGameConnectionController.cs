@@ -9,27 +9,27 @@ using web_bite_server.Models;
 
 namespace web_bite_server.Controllers
 {
-    [Route("api/card-game")]
+    [Route("api/card-game-connection")]
     [ApiController]
     [Authorize]
-    public class CardGameController(IHubContext<UsersHub, IUsersHub> hubContex, UserManager<AppUser> userManager, ICardGameRepository cardGameRepository) : ControllerBase
+    public class CardGameConnectionController(IHubContext<CardGameHub, ICardGameHub> hubContex, UserManager<AppUser> userManager, ICardGameConnectionRepository cardGameRepository) : ControllerBase
     {
-        private readonly IHubContext<UsersHub, IUsersHub> _hubContext = hubContex;
+        private readonly IHubContext<CardGameHub, ICardGameHub> _hubContext = hubContex;
         private readonly UserManager<AppUser> _userManager = userManager;
-        private readonly ICardGameRepository _cardGameRepository = cardGameRepository;
+        private readonly ICardGameConnectionRepository _cardGameRepository = cardGameRepository;
 
         [HttpPost("request-connection/{userToConnectionId}")]
         [Produces("application/json")]
-        public async Task<ActionResult<bool>> RequestGameConnection([FromRoute] string userToConnectionId)
+        public async Task<ActionResult<bool>> RequestCardGameConnection([FromRoute] string userToConnectionId)
         {
             var appUser = await _userManager.GetUserAsync(HttpContext.User);
-            if (appUser == null || appUser?.GameConnectionId == null)
+            if (appUser == null || appUser?.CardGameConnectionId == null)
             {
                 return NotFound("User not found or is not connected to the game");
             }
 
-            var userConnection = await _cardGameRepository.GetGameConnectionByGameConnectionId(appUser.GameConnectionId);
-            var userToConnection = await _cardGameRepository.GetGameConnectionByConnectionId(userToConnectionId);
+            var userConnection = await _cardGameRepository.GetCardGameConnectionByCardGameConnectionId(appUser.CardGameConnectionId);
+            var userToConnection = await _cardGameRepository.GetCardGameConnectionByConnectionId(userToConnectionId);
 
             if (
                 userConnection != null && string.IsNullOrEmpty(userConnection.UserToId) && string.IsNullOrEmpty(userConnection.UserToRequestPendingId) &&
@@ -37,10 +37,10 @@ namespace web_bite_server.Controllers
                 )
             {
                 await _cardGameRepository.UpdateConnectionUsersPendingIds(userConnection, userToConnection);
-                await _hubContext.Clients.Client(userToConnection.ConnectionId).RequestGameConnection(appUser.UserName ?? "");
+                await _hubContext.Clients.Client(userToConnection.ConnectionId).RequestCardGameConnection(appUser.UserName ?? "");
 
-                var allActiveGameConnections = await _cardGameRepository.GetAllActiveGameConnectionsAsync();
-                await _hubContext.Clients.All.UserConnections(allActiveGameConnections);
+                var allActiveCardGameConnections = await _cardGameRepository.GetAllActiveCardGameConnectionsAsync();
+                await _hubContext.Clients.All.UserConnections(allActiveCardGameConnections);
                 return Ok(true);
             }
             return Ok(false);
@@ -48,27 +48,27 @@ namespace web_bite_server.Controllers
 
         [HttpPost("decline-connection")]
         [Produces("application/json")]
-        public async Task<ActionResult<bool>> DeclineGameConnection()
+        public async Task<ActionResult<bool>> DeclineCardGameConnection()
         {
             var appUser = await _userManager.GetUserAsync(HttpContext.User);
-            if (appUser?.GameConnectionId == null)
+            if (appUser?.CardGameConnectionId == null)
             {
                 return NotFound("User not found or is not connected to the game");
             }
 
-            var userConnection = await _cardGameRepository.GetGameConnectionByGameConnectionId(appUser.GameConnectionId);
+            var userConnection = await _cardGameRepository.GetCardGameConnectionByCardGameConnectionId(appUser.CardGameConnectionId);
             if (string.IsNullOrEmpty(userConnection?.UserToRequestPendingId))
             {
                 return NotFound("User is not waiting for connection");
             }
 
             var appPendingUser = await _userManager.FindByIdAsync(userConnection.UserToRequestPendingId);
-            if (appPendingUser?.GameConnectionId == null)
+            if (appPendingUser?.CardGameConnectionId == null)
             {
                 return NotFound("Pending User not found or is not connected to the game");
             }
 
-            var userToConnection = await _cardGameRepository.GetGameConnectionByGameConnectionId(appPendingUser.GameConnectionId);
+            var userToConnection = await _cardGameRepository.GetCardGameConnectionByCardGameConnectionId(appPendingUser.CardGameConnectionId);
             if (string.IsNullOrEmpty(userToConnection?.UserToRequestPendingId))
             {
                 return NotFound("Pending User is not waiting for connection");
@@ -80,10 +80,10 @@ namespace web_bite_server.Controllers
                 )
             {
                 await _cardGameRepository.CleanConnectionUsersPendingIds(userConnection, userToConnection);
-                await _hubContext.Clients.Client(userToConnection.ConnectionId).DeclineGameConnection();
+                await _hubContext.Clients.Client(userToConnection.ConnectionId).DeclineCardGameConnection();
 
-                var allActiveGameConnections = await _cardGameRepository.GetAllActiveGameConnectionsAsync();
-                await _hubContext.Clients.All.UserConnections(allActiveGameConnections);
+                var allActiveCardGameConnections = await _cardGameRepository.GetAllActiveCardGameConnectionsAsync();
+                await _hubContext.Clients.All.UserConnections(allActiveCardGameConnections);
                 return Ok(true);
             }
             return Ok(false);
@@ -91,15 +91,15 @@ namespace web_bite_server.Controllers
 
         [HttpPost("accept-connection")]
         [Produces("application/json")]
-        public async Task<ActionResult<bool>> AcceptGameConnection()
+        public async Task<ActionResult<bool>> AcceptCardGameConnection()
         {
             var appUser = await _userManager.GetUserAsync(HttpContext.User);
-            if (appUser?.GameConnectionId == null)
+            if (appUser?.CardGameConnectionId == null)
             {
                 return NotFound("User not found or is not connected to the game");
             }
 
-            var userConnection = await _cardGameRepository.GetGameConnectionByGameConnectionId(appUser.GameConnectionId);
+            var userConnection = await _cardGameRepository.GetCardGameConnectionByCardGameConnectionId(appUser.CardGameConnectionId);
             if (string.IsNullOrEmpty(userConnection?.UserToRequestPendingId))
             {
                 return NotFound("User is not waiting for connection");
@@ -110,25 +110,25 @@ namespace web_bite_server.Controllers
             }
 
             var userReceive = await _userManager.FindByIdAsync(userConnection.UserToRequestPendingId);
-            if (userReceive?.GameConnectionId == null)
+            if (userReceive?.CardGameConnectionId == null)
             {
                 return NotFound("Game requesting user not found or is not connected to the game");
             }
 
-            var userReceiveGameConnection = await _cardGameRepository.GetGameConnectionByGameConnectionId(userReceive.GameConnectionId);
-            if (string.IsNullOrEmpty(userReceiveGameConnection?.UserToRequestPendingId))
+            var userReceiveCardGameConnection = await _cardGameRepository.GetCardGameConnectionByCardGameConnectionId(userReceive.CardGameConnectionId);
+            if (string.IsNullOrEmpty(userReceiveCardGameConnection?.UserToRequestPendingId))
             {
                 return NotFound("Game requesting user not found or is not waiting for connection");
             }
-            if (!string.IsNullOrEmpty(userReceiveGameConnection?.UserToId))
+            if (!string.IsNullOrEmpty(userReceiveCardGameConnection?.UserToId))
             {
                 return NotFound("Game requesting user is already connected with other user");
             }
 
-            if (userConnection != null && userReceiveGameConnection != null)
+            if (userConnection != null && userReceiveCardGameConnection != null)
             {
-                await _cardGameRepository.ConnectConnectionUsersIds(userConnection, userReceiveGameConnection);
-                await _hubContext.Clients.Client(userReceiveGameConnection.ConnectionId).AcceptGameConnection();
+                await _cardGameRepository.ConnectConnectionUsersIds(userConnection, userReceiveCardGameConnection);
+                await _hubContext.Clients.Client(userReceiveCardGameConnection.ConnectionId).AcceptCardGameConnection();
                 return Ok(true);
             }
 
@@ -137,32 +137,32 @@ namespace web_bite_server.Controllers
 
         [HttpGet("check-game-connection")]
         [Produces("application/json")]
-        public async Task<ActionResult<bool>> CheckGameConnection()
+        public async Task<ActionResult<bool>> CheckCardGameConnection()
         {
             var appUser = await _userManager.GetUserAsync(HttpContext.User);
-            if (appUser?.GameConnectionId == null)
+            if (appUser?.CardGameConnectionId == null)
             {
                 return NotFound("User not found or is not connected to the game");
             }
 
-            var userGameConnection = await _cardGameRepository.GetGameConnectionByGameConnectionId(appUser.GameConnectionId);
-            if (userGameConnection?.UserToId == null)
+            var userCardGameConnection = await _cardGameRepository.GetCardGameConnectionByCardGameConnectionId(appUser.CardGameConnectionId);
+            if (userCardGameConnection?.UserToId == null)
             {
                 return NotFound("User not connected with other user");
             }
 
-            var appConnectedUser = await _userManager.FindByIdAsync(userGameConnection.UserToId);
-            if (appConnectedUser?.GameConnectionId == null)
+            var appConnectedUser = await _userManager.FindByIdAsync(userCardGameConnection.UserToId);
+            if (appConnectedUser?.CardGameConnectionId == null)
             {
                 return NotFound("Connected User not found or is not connected to the game");
             }
 
-            var connectedUserGameConnection = await _cardGameRepository.GetGameConnectionByGameConnectionId(appConnectedUser.GameConnectionId);
-            if (connectedUserGameConnection?.UserToId == null)
+            var connectedUserCardGameConnection = await _cardGameRepository.GetCardGameConnectionByCardGameConnectionId(appConnectedUser.CardGameConnectionId);
+            if (connectedUserCardGameConnection?.UserToId == null)
             {
                 return NotFound("Connected User not connected with other user");
             }
-            if (userGameConnection.UserToId == appConnectedUser.Id && connectedUserGameConnection.UserToId == appUser.Id)
+            if (userCardGameConnection.UserToId == appConnectedUser.Id && connectedUserCardGameConnection.UserToId == appUser.Id)
             {
                 return Ok(true);
             }

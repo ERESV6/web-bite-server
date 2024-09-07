@@ -1,8 +1,7 @@
-using System.ComponentModel.DataAnnotations;
 
 namespace web_bite_server.Models
 {
-    public class GameConnection
+    public class CardGameConnection
     {
         public int Id { get; set; }
         public required string ConnectionId { get; set; }

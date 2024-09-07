@@ -15,7 +15,7 @@ namespace web_bite_server.Repository
         public async Task<List<CardGameCardDto>> GetAllCards()
         {
             // todo mappers
-            return await _dBContext.GameCard.Select(c => new CardGameCardDto
+            return await _dBContext.CardGameCard.Select(c => new CardGameCardDto
             {
                 CardName = c.CardName,
                 AttackValue = c.AttackValue,

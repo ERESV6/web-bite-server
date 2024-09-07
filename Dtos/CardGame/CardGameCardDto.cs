@@ -12,7 +12,7 @@ namespace web_bite_server.Dtos.CardGame
         public int AttackValue { get; set; }
         public int DefenseValue { get; set; }
         public string Label { get; set; } = string.Empty;
-        public GameCardAbility SpecialAbility { get; set; }
+        public CardGameCardAbility SpecialAbility { get; set; }
 
     }
 }

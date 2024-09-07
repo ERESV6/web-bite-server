@@ -7,15 +7,15 @@ using web_bite_server.Models;
 
 namespace web_bite_server.Repository
 {
-    public class CardGameRepository : ICardGameRepository
+    public class CardGameConnectionRepository : ICardGameConnectionRepository
     {
         private readonly ApplicationDBContext _dbContext;
-        public CardGameRepository(ApplicationDBContext dbContext)
+        public CardGameConnectionRepository(ApplicationDBContext dbContext)
         {
             _dbContext = dbContext;
         }
 
-        public async Task CleanConnectionUsersPendingIds(GameConnection? userConnection, GameConnection? userToConnection)
+        public async Task CleanConnectionUsersPendingIds(CardGameConnection? userConnection, CardGameConnection? userToConnection)
         {
             if (userConnection == null || userToConnection == null)
             {
@@ -26,7 +26,7 @@ namespace web_bite_server.Repository
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task ConnectConnectionUsersIds(GameConnection? userConnection, GameConnection? userToConnection)
+        public async Task ConnectConnectionUsersIds(CardGameConnection? userConnection, CardGameConnection? userToConnection)
         {
             if (userConnection == null || userToConnection == null)
             {
@@ -41,7 +41,7 @@ namespace web_bite_server.Repository
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task UpdateConnectionUsersPendingIds(GameConnection? userConnection, GameConnection? userToConnection)
+        public async Task UpdateConnectionUsersPendingIds(CardGameConnection? userConnection, CardGameConnection? userToConnection)
         {
             if (userConnection == null || userToConnection == null)
             {
@@ -52,37 +52,37 @@ namespace web_bite_server.Repository
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<List<CardGameActiveUserDto>> GetAllActiveGameConnectionsAsync()
+        public async Task<List<CardGameActiveUserDto>> GetAllActiveCardGameConnectionsAsync()
         {
-            var gameConnections = await _dbContext.GameConnection.Include(i => i.AppUser).ToListAsync();
+            var CardGameConnections = await _dbContext.CardGameConnection.Include(i => i.AppUser).ToListAsync();
             // todo mappers
-            var activeGameConnections = gameConnections.Select(c => new CardGameActiveUserDto
+            var activeCardGameConnections = CardGameConnections.Select(c => new CardGameActiveUserDto
             {
                 ConnectionId = c.ConnectionId,
                 UserName = c.AppUser.UserName,
                 IsAvaliable = !(c.UserToId?.Length > 0 || c.UserToRequestPendingId?.Length > 0)
             }).ToList();
 
-            return activeGameConnections;
+            return activeCardGameConnections;
         }
 
-        public async Task<GameConnection?> GetGameConnectionByConnectionId(string? connectionId)
+        public async Task<CardGameConnection?> GetCardGameConnectionByConnectionId(string? connectionId)
         {
-            return await _dbContext.GameConnection.FirstOrDefaultAsync(gc => gc.ConnectionId == connectionId);
+            return await _dbContext.CardGameConnection.FirstOrDefaultAsync(gc => gc.ConnectionId == connectionId);
         }
 
-        public async Task<GameConnection?> GetGameConnectionByGameConnectionId(int? gameConnectionId)
+        public async Task<CardGameConnection?> GetCardGameConnectionByCardGameConnectionId(int? CardGameConnectionId)
         {
-            return await _dbContext.GameConnection.FirstOrDefaultAsync(gc => gc.Id == gameConnectionId);
+            return await _dbContext.CardGameConnection.FirstOrDefaultAsync(gc => gc.Id == CardGameConnectionId);
         }
 
-        public async Task RemoveGameConnection(GameConnection connection)
+        public async Task RemoveCardGameConnection(CardGameConnection connection)
         {
-            _dbContext.GameConnection.Remove(connection);
+            _dbContext.CardGameConnection.Remove(connection);
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task UpdateUserGameConnectionOnReconnect(GameConnection connection, string connectionId)
+        public async Task UpdateUserCardGameConnectionOnReconnect(CardGameConnection connection, string connectionId)
         {
             connection.ConnectionId = connectionId;
             connection.UserToId = string.Empty;
