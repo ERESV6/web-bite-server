@@ -49,18 +49,20 @@ namespace web_bite_server.Hubs
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             var userName = Context.User?.Identity?.Name;
-            var connection = await _cardGameRepository.GetGameConnectionByConnectionId(Context.ConnectionId);
-            if (connection != null && userName != null)
-            {
-                var appUser = await _userManager.FindByNameAsync(userName);
-                if (appUser != null)
-                {
-                    appUser.GameConnectionId = null;
-                    await _userManager.UpdateAsync(appUser);
-                    await _cardGameRepository.RemoveGameConnection(connection);
-                    await SendConnectionMessage($"{userName} leave.");
-                }
-            }
+            await SendConnectionMessage($"{userName} leave.");
+            // var userName = Context.User?.Identity?.Name;
+            // var connection = await _cardGameRepository.GetGameConnectionByConnectionId(Context.ConnectionId);
+            // if (connection != null && userName != null)
+            // {
+            //     var appUser = await _userManager.FindByNameAsync(userName);
+            //     if (appUser != null)
+            //     {
+            //         appUser.GameConnectionId = null;
+            //         await _userManager.UpdateAsync(appUser);
+            //         await _cardGameRepository.RemoveGameConnection(connection);
+            //         await SendConnectionMessage($"{userName} leave.");
+            //     }
+            // }
 
             await base.OnDisconnectedAsync(exception);
         }

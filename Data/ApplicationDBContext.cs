@@ -7,9 +7,10 @@ namespace web_bite_server.Data
 {
     public class ApplicationDBContext : IdentityDbContext<AppUser>
     {
-        public ApplicationDBContext(DbContextOptions dbContextOptions) : base(dbContextOptions){}
+        public ApplicationDBContext(DbContextOptions dbContextOptions) : base(dbContextOptions) { }
 
-        public DbSet<GameConnection> GameConnection {get; set;}
+        public DbSet<GameConnection> GameConnection { get; set; }
+        public DbSet<GameCard> GameCard { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

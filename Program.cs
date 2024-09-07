@@ -65,6 +65,7 @@ builder.Services.AddAuthentication(o =>
     });
 
 builder.Services.AddScoped<ICardGameRepository, CardGameRepository>();
+builder.Services.AddScoped<ICardGameCardRepository, CardGameCardRepository>();
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.

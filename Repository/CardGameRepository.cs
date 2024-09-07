@@ -55,7 +55,7 @@ namespace web_bite_server.Repository
         public async Task<List<CardGameActiveUserDto>> GetAllActiveGameConnectionsAsync()
         {
             var gameConnections = await _dbContext.GameConnection.Include(i => i.AppUser).ToListAsync();
-            // to mappers
+            // todo mappers
             var activeGameConnections = gameConnections.Select(c => new CardGameActiveUserDto
             {
                 ConnectionId = c.ConnectionId,
