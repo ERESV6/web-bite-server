@@ -12,5 +12,6 @@ namespace web_bite_server.interfaces.CardGame
         Task RequestCardGameConnection(string userName);
         Task AcceptCardGameConnection();
         Task DeclineCardGameConnection();
+        Task PlayCard(int playedCardsNumber);
     }
 }
