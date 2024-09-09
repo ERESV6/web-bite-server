@@ -73,7 +73,7 @@ namespace web_bite_server.Repository
 
         public async Task<CardGameConnection?> GetCardGameConnectionByCardGameConnectionId(int? CardGameConnectionId)
         {
-            return await _dbContext.CardGameConnection.FirstOrDefaultAsync(gc => gc.Id == CardGameConnectionId);
+            return await _dbContext.CardGameConnection.Include(i => i.AppUser).FirstOrDefaultAsync(gc => gc.Id == CardGameConnectionId);
         }
 
         public async Task RemoveCardGameConnection(CardGameConnection connection)

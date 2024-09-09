@@ -6,6 +6,7 @@ using web_bite_server.Hubs;
 using web_bite_server.Interfaces.CardGame;
 using web_bite_server.Models;
 using web_bite_server.Repository;
+using web_bite_server.Services.CardGame;
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
@@ -66,6 +67,11 @@ builder.Services.AddAuthentication(o =>
 
 builder.Services.AddScoped<ICardGameConnectionRepository, CardGameConnectionRepository>();
 builder.Services.AddScoped<ICardGameCardRepository, CardGameCardRepository>();
+
+
+// @TODO Interface service
+builder.Services.AddScoped<CardGameConnectionService>();
+builder.Services.AddScoped<CardGameCardService>();
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.
