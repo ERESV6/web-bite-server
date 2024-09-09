@@ -2,16 +2,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using web_bite_server.interfaces.CardGame;
-using web_bite_server.Interfaces.CardGame;
 using web_bite_server.Models;
+using web_bite_server.Repository;
 
 namespace web_bite_server.Hubs
 {
     [Authorize]
-    public class CardGameHub(UserManager<AppUser> userManager, ICardGameConnectionRepository cardGameRepository) : Hub<ICardGameHub>
+    public class CardGameHub(UserManager<AppUser> userManager, CardGameConnectionRepository cardGameRepository) : Hub<ICardGameHub>
     {
         private readonly UserManager<AppUser> _userManager = userManager;
-        private readonly ICardGameConnectionRepository _cardGameRepository = cardGameRepository;
+        private readonly CardGameConnectionRepository _cardGameRepository = cardGameRepository;
 
         public override async Task OnConnectedAsync()
         {

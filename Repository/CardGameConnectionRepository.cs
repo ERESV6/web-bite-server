@@ -2,12 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using web_bite_server.Data;
 using web_bite_server.Dtos.CardGame;
-using web_bite_server.Interfaces.CardGame;
 using web_bite_server.Models;
 
 namespace web_bite_server.Repository
 {
-    public class CardGameConnectionRepository : ICardGameConnectionRepository
+    public class CardGameConnectionRepository
     {
         private readonly ApplicationDBContext _dbContext;
         public CardGameConnectionRepository(ApplicationDBContext dbContext)

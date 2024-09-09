@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using web_bite_server.Data;
 using web_bite_server.Hubs;
-using web_bite_server.Interfaces.CardGame;
 using web_bite_server.Models;
 using web_bite_server.Repository;
 using web_bite_server.Services.CardGame;
@@ -65,11 +64,12 @@ builder.Services.AddAuthentication(o =>
         };
     });
 
-builder.Services.AddScoped<ICardGameConnectionRepository, CardGameConnectionRepository>();
-builder.Services.AddScoped<ICardGameCardRepository, CardGameCardRepository>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
+builder.Services.AddScoped<CardGameConnectionRepository>();
+builder.Services.AddScoped<CardGameCardRepository>();
 
-// @TODO Interface service
 builder.Services.AddScoped<CardGameConnectionService>();
 builder.Services.AddScoped<CardGameCardService>();
 
@@ -88,5 +88,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<CardGameHub>("card-game-hub");
+
+app.UseExceptionHandler();
 
 app.Run();
