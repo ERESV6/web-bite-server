@@ -148,6 +148,7 @@ namespace web_bite_server.Services.CardGame
             {
                 ConnectionId = userCardGameConnection.ConnectionId,
                 UserName = userCardGameConnection.AppUser.UserName ?? "",
+                EnemyConnectionId = connectedUserCardGameConnection.ConnectionId,
                 EnemyUserName = connectedUserCardGameConnection.AppUser?.UserName ?? ""
             };
         }
