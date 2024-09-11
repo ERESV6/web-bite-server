@@ -31,5 +31,14 @@ namespace web_bite_server.Controllers.CardGame
             await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyConnectionId).PlayCard(playedCardsNumber);
             return Ok(playedCardsNumber);
         }
+
+        [HttpPost("end-turn")]
+        [Produces("application/json")]
+        public async Task<IActionResult> EndTurn()
+        {
+            var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
+            await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyConnectionId).EndTurn();
+            return NoContent();
+        }
     }
 }
