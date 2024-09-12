@@ -31,8 +31,8 @@ namespace web_bite_server.Controllers.CardGame
         [Produces("application/json")]
         public async Task<ActionResult<List<CardGameCardDto>>> AddCardsToGame([FromBody] List<CardGameCardDto> cardGameCards)
         {
-            var userConnection = await _cardGameConnectionService.GetLoggedUserGameConnection(HttpContext.User);
-            var cardGameHand = await _cardGameGameService.AddCardsToCardGameHand(cardGameCards, userConnection);
+            var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
+            var cardGameHand = await _cardGameGameService.AddCardsToCardGameHand(cardGameCards, connectedUserCardGameConnection);
             return Ok(cardGameHand);
         }
 
@@ -41,9 +41,10 @@ namespace web_bite_server.Controllers.CardGame
         public async Task<ActionResult<int>> PlayCard([FromBody] int playedCardsNumber)
         {
             // sprawdzić czy zagrane karty istnieją w ręce gracza
+            // weryfikować czy zgadzają się rundy
             var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
 
-            await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyConnectionId).PlayCard(playedCardsNumber);
+            await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyUserConnection.ConnectionId).PlayCard(playedCardsNumber);
             return Ok(playedCardsNumber);
         }
 
@@ -51,6 +52,7 @@ namespace web_bite_server.Controllers.CardGame
         [Produces("application/json")]
         public async Task<IActionResult> EndTurn()
         {
+            // weryfikować czy zgadzają się rundy
             // sprawdzić czy zagrane karty istnieją w ręce gracza
             // po zakończeniu tury, dodać do bazy (podłączonego gracza) zagrane karty
             // na nowym endpoincie dodać pobranie kart moich i oponenta i na podstawie tego wyliczenia itp
@@ -58,7 +60,7 @@ namespace web_bite_server.Controllers.CardGame
             // system ulubionych kart - wyświetlają się jako pierwsze i podświetlone przed startem gry
             // system zawsze wyboru kart przed rozpoczęciem gry
             var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
-            await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyConnectionId).EndTurn();
+            await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyUserConnection.ConnectionId).EndTurn();
             return NoContent();
         }
     }

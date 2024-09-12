@@ -121,7 +121,7 @@ namespace web_bite_server.Services.CardGame
             return false;
         }
 
-        public async Task<CardGameConnectionDto> CheckCardGameConnection(ClaimsPrincipal user)
+        public async Task<CardGameUsersConnectionDto> CheckCardGameConnection(ClaimsPrincipal user)
         {
             var userCardGameConnection = await GetLoggedUserGameConnection(user);
             if (userCardGameConnection?.UserToId == null)
@@ -144,12 +144,10 @@ namespace web_bite_server.Services.CardGame
             {
                 throw new NotFoundException("USER AND CONNECTED USER IDS DONT MATCH");
             }
-            return new CardGameConnectionDto
+            return new CardGameUsersConnectionDto
             {
-                ConnectionId = userCardGameConnection.ConnectionId,
-                UserName = userCardGameConnection.AppUser.UserName ?? "",
-                EnemyConnectionId = connectedUserCardGameConnection.ConnectionId,
-                EnemyUserName = connectedUserCardGameConnection.AppUser?.UserName ?? ""
+                UserConnection = userCardGameConnection,
+                EnemyUserConnection = connectedUserCardGameConnection
             };
         }
 

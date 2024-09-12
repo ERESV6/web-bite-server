@@ -16,6 +16,7 @@ namespace web_bite_server.Repository
         public async Task AddCardsToCardGameHand(CardGameConnection userConnection, IEnumerable<CardGameCard> cardGameCards)
         {
             userConnection.CardGameHand.AddRange(cardGameCards);
+            userConnection.Round = 1;
             await _dbContext.SaveChangesAsync();
         }
 

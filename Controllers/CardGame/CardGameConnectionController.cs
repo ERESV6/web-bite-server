@@ -37,7 +37,13 @@ namespace web_bite_server.Controllers
         [Produces("application/json")]
         public async Task<ActionResult<CardGameConnectionDto>> CheckCardGameConnection()
         {
-            return Ok(await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User));
+            var cardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
+
+            return Ok(new CardGameConnectionDto
+            {
+                UserName = cardGameConnection.UserConnection.AppUser?.UserName ?? "",
+                EnemyUserName = cardGameConnection.EnemyUserConnection.AppUser?.UserName ?? ""
+            });
         }
     }
 }

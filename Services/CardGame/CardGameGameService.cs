@@ -1,5 +1,8 @@
+using Microsoft.AspNetCore.SignalR;
 using web_bite_server.Dtos.CardGame;
 using web_bite_server.Exceptions;
+using web_bite_server.Hubs;
+using web_bite_server.interfaces.CardGame;
 using web_bite_server.Models;
 using web_bite_server.Repository;
 
@@ -8,16 +11,19 @@ namespace web_bite_server.Services.CardGame
     public class CardGameGameService
     {
         private readonly CardGameGameRepository _cardGameGameRepository;
+        private readonly IHubContext<CardGameHub, ICardGameHub> _hubContext;
         public CardGameGameService(
-            CardGameGameRepository cardGameGameRepository
+            CardGameGameRepository cardGameGameRepository,
+            IHubContext<CardGameHub, ICardGameHub> hubContext
         )
         {
             _cardGameGameRepository = cardGameGameRepository;
+            _hubContext = hubContext;
         }
 
-        public async Task<List<CardGameCardDto>?> AddCardsToCardGameHand(List<CardGameCardDto> cardGameCardsDto, CardGameConnection? userConnection)
+        public async Task<List<CardGameCardDto>?> AddCardsToCardGameHand(List<CardGameCardDto> cardGameCardsDto, CardGameUsersConnectionDto? cardGameUsersConnectionDto)
         {
-            if (userConnection == null)
+            if (cardGameUsersConnectionDto?.UserConnection == null)
             {
                 throw new NotFoundException("CONNECTED USER NOT FOUND");
             }
@@ -32,9 +38,12 @@ namespace web_bite_server.Services.CardGame
                 SpecialAbility = c.SpecialAbility
             });
 
-            await _cardGameGameRepository.AddCardsToCardGameHand(userConnection, cardGameCards);
+            await _cardGameGameRepository.AddCardsToCardGameHand(cardGameUsersConnectionDto.UserConnection, cardGameCards);
+            var cardGameHand = await _cardGameGameRepository.GetUserCardGameHand(cardGameUsersConnectionDto.UserConnection);
 
-            return await _cardGameGameRepository.GetUserCardGameHand(userConnection);
+            await _hubContext.Clients.Client(cardGameUsersConnectionDto.EnemyUserConnection.ConnectionId).SendRound(1);
+
+            return cardGameHand;
         }
     }
 }
