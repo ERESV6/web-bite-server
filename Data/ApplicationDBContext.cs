@@ -19,6 +19,16 @@ namespace web_bite_server.Data
             builder.Entity<AppUser>().HasOne(u => u.CardGameConnection).WithOne(t => t.AppUser).HasForeignKey<CardGameConnection>(fk => fk.AppUserId);
             builder.Entity<CardGameConnection>().HasOne(u => u.AppUser).WithOne(t => t.CardGameConnection).HasForeignKey<AppUser>(fk => fk.CardGameConnectionId);
 
+            builder.Entity<CardGameConnection>()
+                .HasMany(e => e.CardGameHand)
+                .WithMany(e => e.CardGameConnection)
+                .UsingEntity("CardGamePlayerHand");
+
+            builder.Entity<CardGameConnection>()
+                .HasMany(e => e.CardGamePlayed)
+                .WithMany(e => e.CardGameConnection)
+                .UsingEntity("CardGamePlayerPlayedCards");
+
             List<IdentityRole> roles =
             [
                 new IdentityRole

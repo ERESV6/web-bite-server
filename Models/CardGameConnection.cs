@@ -9,5 +9,7 @@ namespace web_bite_server.Models
         public string UserToRequestPendingId { get; set; } = string.Empty;
         public required string AppUserId { get; set; }
         public AppUser? AppUser { get; set; }
+        public List<CardGameCard> CardGameHand { get; set; } = [];
+        public List<CardGameCard> CardGamePlayed { get; set; } = [];
     }
 }

@@ -34,10 +34,10 @@ namespace web_bite_server.Hubs
                     }
                     else
                     {
-                        var CardGameConnection = await _cardGameRepository.GetCardGameConnectionByCardGameConnectionId(appUser.CardGameConnectionId);
-                        if (CardGameConnection != null)
+                        var cardGameConnection = await _cardGameRepository.GetCardGameConnectionByCardGameConnectionId(appUser.CardGameConnectionId);
+                        if (cardGameConnection != null)
                         {
-                            await _cardGameRepository.UpdateUserCardGameConnectionOnReconnect(CardGameConnection, connectionId);
+                            await _cardGameRepository.UpdateUserCardGameConnectionOnReconnect(cardGameConnection, connectionId);
                         }
                     }
                     await SendConnectionMessage($"{userName} has joined.");
@@ -49,20 +49,19 @@ namespace web_bite_server.Hubs
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             var userName = Context.User?.Identity?.Name;
+            var connection = await _cardGameRepository.GetCardGameConnectionByConnectionId(Context.ConnectionId);
+            if (connection != null && userName != null)
+            {
+                var appUser = await _userManager.FindByNameAsync(userName);
+                if (appUser != null)
+                {
+                    appUser.CardGameConnectionId = null;
+                    await _userManager.UpdateAsync(appUser);
+                    await _cardGameRepository.RemoveCardGameConnection(connection);
+                    await SendConnectionMessage($"{userName} leave.");
+                }
+            }
             await SendConnectionMessage($"{userName} leave.");
-            // var userName = Context.User?.Identity?.Name;
-            // var connection = await _cardGameRepository.GetCardGameConnectionByConnectionId(Context.ConnectionId);
-            // if (connection != null && userName != null)
-            // {
-            //     var appUser = await _userManager.FindByNameAsync(userName);
-            //     if (appUser != null)
-            //     {
-            //         appUser.CardGameConnectionId = null;
-            //         await _userManager.UpdateAsync(appUser);
-            //         await _cardGameRepository.RemoveCardGameConnection(connection);
-            //         await SendConnectionMessage($"{userName} leave.");
-            //     }
-            // }
 
             await base.OnDisconnectedAsync(exception);
         }

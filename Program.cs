@@ -69,9 +69,11 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddScoped<CardGameConnectionRepository>();
 builder.Services.AddScoped<CardGameCardRepository>();
+builder.Services.AddScoped<CardGameGameRepository>();
 
 builder.Services.AddScoped<CardGameConnectionService>();
 builder.Services.AddScoped<CardGameCardService>();
+builder.Services.AddScoped<CardGameGameService>();
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.

@@ -24,6 +24,5 @@ namespace web_bite_server.Controllers
         {
             return Ok(await _cardGameCardService.GetAllCards());
         }
-
     }
 }
