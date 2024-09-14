@@ -20,6 +20,13 @@ namespace web_bite_server.Repository
             await _dbContext.SaveChangesAsync();
         }
 
+        public async Task AddPlayedCards(CardGameConnection userConnection, IEnumerable<CardGameCard> playedCards)
+        {
+            userConnection.CardGamePlayerPlayed.AddRange(playedCards);
+            userConnection.Round += 1;
+            await _dbContext.SaveChangesAsync();
+        }
+
         public async Task<List<CardGameCardDto>?> GetUserCardGameHand(CardGameConnection userConnection)
         {
             var userCardGameHand = await _dbContext.CardGamePlayerHand

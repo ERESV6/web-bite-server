@@ -41,10 +41,10 @@ namespace web_bite_server.Controllers.CardGame
         public async Task<ActionResult<int>> PlayCard([FromBody] List<int> cardGameIds)
         {
             var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
-            var playedCardsNumber = await _cardGameGameService.CheckPlayedCards(cardGameIds, connectedUserCardGameConnection);
+            var playedCards = await _cardGameGameService.CheckPlayedCards(cardGameIds, connectedUserCardGameConnection);
 
-            await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyUserConnection.ConnectionId).PlayCard(playedCardsNumber);
-            return Ok(playedCardsNumber);
+            await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyUserConnection.ConnectionId).PlayCard(playedCards.Count);
+            return Ok(playedCards.Count);
         }
 
         [HttpPost("end-turn")]
@@ -52,8 +52,10 @@ namespace web_bite_server.Controllers.CardGame
         public async Task<IActionResult> EndTurn([FromBody] List<int> cardGameIds)
         {
             var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
-            await _cardGameGameService.CheckPlayedCards(cardGameIds, connectedUserCardGameConnection);
-
+            var playedCards = await _cardGameGameService.CheckPlayedCards(cardGameIds, connectedUserCardGameConnection);
+            await _cardGameGameService.AddPlayedCards(playedCards, connectedUserCardGameConnection);
+            // usunac karty z ręki
+            // cdn..
             await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyUserConnection.ConnectionId).EndTurn();
             return NoContent();
         }

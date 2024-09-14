@@ -12,6 +12,7 @@ namespace web_bite_server.Data
         public DbSet<CardGameConnection> CardGameConnection { get; set; }
         public DbSet<CardGameCard> CardGameCard { get; set; }
         public DbSet<CardGamePlayerHand> CardGamePlayerHand { get; set; }
+        public DbSet<CardGamePlayerPlayed> CardGamePlayerPlayed { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -24,6 +25,11 @@ namespace web_bite_server.Data
                 .HasMany(e => e.CardGamePlayerHand)
                 .WithMany(e => e.CardGamePlayerHand)
                 .UsingEntity<CardGamePlayerHand>();
+
+            builder.Entity<CardGameConnection>()
+                .HasMany(e => e.CardGamePlayerPlayed)
+                .WithMany(e => e.CardGamePlayerPlayed)
+                .UsingEntity<CardGamePlayerPlayed>();
 
             List<IdentityRole> roles =
             [

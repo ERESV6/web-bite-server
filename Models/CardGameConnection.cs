@@ -11,5 +11,6 @@ namespace web_bite_server.Models
         public int Round { get; set; } = 0;
         public AppUser? AppUser { get; set; }
         public List<CardGameCard> CardGamePlayerHand { get; set; } = [];
+        public List<CardGameCard> CardGamePlayerPlayed { get; set; } = [];
     }
 }
