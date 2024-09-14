@@ -10,7 +10,6 @@ namespace web_bite_server.Models
         public required string AppUserId { get; set; }
         public int Round { get; set; } = 0;
         public AppUser? AppUser { get; set; }
-        public List<CardGameCard> CardGameHand { get; set; } = [];
-        public List<CardGameCard> CardGamePlayed { get; set; } = [];
+        public List<CardGameCard> CardGamePlayerHand { get; set; } = [];
     }
 }

@@ -10,6 +10,6 @@ namespace web_bite_server.Models
         public int DefenseValue { get; set; }
         public string Label { get; set; } = string.Empty;
         public CardGameCardAbility SpecialAbility { get; set; }
-        public List<CardGameConnection> CardGameConnection { get; } = [];
+        public List<CardGameConnection> CardGamePlayerHand { get; } = [];
     }
 }

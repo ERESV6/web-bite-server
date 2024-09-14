@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using web_bite_server.Data;
 using web_bite_server.Dtos.CardGame;
+using web_bite_server.Models;
 
 namespace web_bite_server.Repository
 {
@@ -18,6 +19,20 @@ namespace web_bite_server.Repository
             {
                 CardName = c.CardName,
                 AttackValue = c.AttackValue,
+                DefenseValue = c.DefenseValue,
+                Id = c.Id,
+                Label = c.Label,
+                SpecialAbility = c.SpecialAbility
+            }).ToListAsync();
+        }
+
+        public async Task<List<CardGameCard>> GetCardsByIds(List<int> cardGameIds)
+        {
+            // todo mappers
+            return await _dBContext.CardGameCard.Where(c => cardGameIds.Contains(c.Id)).Select(c => new CardGameCard
+            {
+                AttackValue = c.AttackValue,
+                CardName = c.CardName,
                 DefenseValue = c.DefenseValue,
                 Id = c.Id,
                 Label = c.Label,
