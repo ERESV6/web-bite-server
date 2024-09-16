@@ -17,6 +17,7 @@ namespace web_bite_server.Services.CardGame
             CardGameGameRepository cardGameGameRepository,
             CardGameCardRepository cardGameCardRepository,
             IHubContext<CardGameHub, ICardGameHub> hubContext
+
         )
         {
             _cardGameGameRepository = cardGameGameRepository;
@@ -67,9 +68,18 @@ namespace web_bite_server.Services.CardGame
             return cardGameHand;
         }
 
-        public async Task<int> AddPlayedCards(List<CardGameCardDto> playedCards, CardGameUsersConnectionDto cardGameUsersConnectionDto)
+        public async Task EndTurn(List<CardGameCardDto> playedCards, CardGameUsersConnectionDto cardGameUsersConnectionDto)
         {
-            var ddd = playedCards.Select(c => new CardGameCard
+            if (playedCards.Count == 0)
+            {
+                throw new BadHttpRequestException("YOU HAVE TO PLAY AT LEAST ONE CARD");
+            }
+            var cardGamePlayedCards = await _cardGameGameRepository.GetUserCardGamePlayedCards(cardGameUsersConnectionDto.UserConnection);
+            if (cardGamePlayedCards.Count != 0)
+            {
+                throw new BadHttpRequestException("PLAYER ALREADY ENDED HIS TURN");
+            }
+            var cardGameCard = playedCards.Select(c => new CardGameCard
             {
                 AttackValue = c.AttackValue,
                 CardName = c.CardName,
@@ -78,8 +88,20 @@ namespace web_bite_server.Services.CardGame
                 Label = c.Label,
                 SpecialAbility = c.SpecialAbility
             });
-            await _cardGameGameRepository.AddPlayedCards(cardGameUsersConnectionDto.UserConnection, ddd);
-            return playedCards.Count;
+
+            using var transaction = _cardGameGameRepository.CardGameGameRepositoryTransaction();
+            try
+            {
+                await _cardGameGameRepository.AddPlayedCards(cardGameUsersConnectionDto.UserConnection, cardGameCard);
+                await _cardGameGameRepository.DeletePlayedCardsFromHand(cardGameUsersConnectionDto.UserConnection, cardGameCard);
+
+                transaction.Commit();
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                throw new Exception("TRANSACTION ROLLED BACK");
+            }
         }
     }
 }

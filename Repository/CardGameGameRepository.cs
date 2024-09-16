@@ -1,4 +1,6 @@
+using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using web_bite_server.Data;
 using web_bite_server.Dtos.CardGame;
 using web_bite_server.Models;
@@ -20,14 +22,26 @@ namespace web_bite_server.Repository
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task AddPlayedCards(CardGameConnection userConnection, IEnumerable<CardGameCard> playedCards)
+        public async Task<List<CardGameCardDto>> GetUserCardGamePlayedCards(CardGameConnection userConnection)
         {
-            userConnection.CardGamePlayerPlayed.AddRange(playedCards);
-            userConnection.Round += 1;
-            await _dbContext.SaveChangesAsync();
+            var userCardGamePlayed = await _dbContext.CardGamePlayerPlayed
+                .Where(p => p.CardGameConnectionId == userConnection.Id)
+                .Select(i => i.CardGameCard)
+                .Select(c => new CardGameCardDto
+                {
+                    CardName = c.CardName,
+                    AttackValue = c.AttackValue,
+                    DefenseValue = c.DefenseValue,
+                    Id = c.Id,
+                    Label = c.Label,
+                    SpecialAbility = c.SpecialAbility
+                })
+                .ToListAsync();
+
+            return userCardGamePlayed;
         }
 
-        public async Task<List<CardGameCardDto>?> GetUserCardGameHand(CardGameConnection userConnection)
+        public async Task<List<CardGameCardDto>> GetUserCardGameHand(CardGameConnection userConnection)
         {
             var userCardGameHand = await _dbContext.CardGamePlayerHand
                 .Where(p => p.CardGameConnectionId == userConnection.Id)
@@ -64,5 +78,30 @@ namespace web_bite_server.Repository
 
             return userCardGameHand;
         }
+
+        public async Task AddPlayedCards(CardGameConnection userConnection, IEnumerable<CardGameCard> playedCards)
+        {
+            userConnection.CardGamePlayerPlayed.AddRange(playedCards);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task DeletePlayedCardsFromHand(CardGameConnection userConnection, IEnumerable<CardGameCard> playedCards)
+        {
+            var cardsIds = playedCards.Select(c => c.Id);
+            var userCardGameHand = await _dbContext.CardGamePlayerHand
+               .Where(p => p.CardGameConnectionId == userConnection.Id && cardsIds.Contains(p.CardGameCardId))
+               .ToListAsync();
+
+            _dbContext.CardGamePlayerHand.RemoveRange(userCardGameHand);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public DbTransaction CardGameGameRepositoryTransaction()
+        {
+            var transaction = _dbContext.Database.BeginTransaction();
+            return transaction.GetDbTransaction();
+        }
+
     }
+
 }

@@ -94,3 +94,13 @@ app.MapHub<CardGameHub>("card-game-hub");
 app.UseExceptionHandler();
 
 app.Run();
+
+
+/**
+    REFACTOR:
+    - minmax card to constants
+    - rozdzial controler service repository na routes i wszystko per katalog
+    - mappery
+
+*/
+

@@ -53,11 +53,23 @@ namespace web_bite_server.Controllers.CardGame
         {
             var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
             var playedCards = await _cardGameGameService.CheckPlayedCards(cardGameIds, connectedUserCardGameConnection);
-            await _cardGameGameService.AddPlayedCards(playedCards, connectedUserCardGameConnection);
-            // usunac karty z ręki
-            // cdn..
+
+            await _cardGameGameService.EndTurn(playedCards, connectedUserCardGameConnection);
+
             await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyUserConnection.ConnectionId).EndTurn();
             return NoContent();
+        }
+
+        [HttpPost("calculate-round-result")]
+        [Produces("application/json")]
+        public ActionResult<string> CalculateRoundResult()
+        {
+            // dodać rundy
+            // wyliczyć wynik i wyświetlić
+            // zabrać hp
+            // trigger nowych 5 kart, sprawdzić max 10 kart na reke
+            // i ogarnac te warunki z check card number bo juz nie bedzie na sztywno 5
+            return Ok("ROUND ENDED");
         }
     }
 }
