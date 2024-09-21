@@ -42,6 +42,8 @@ namespace web_bite_server.Services.CardGame
         // Dodaje wybrane karty do ręki użytkownika
         public async Task<List<CardGameCardDto>?> AddCardsToCardGameHand(List<int> cardGameIds, CardGameUsersConnectionDto? cardGameUsersConnectionDto)
         {
+            // @TODO zweryfikować czy czasem tu moge za każdym razem sobie strzelać i dodawać karty do ręki. zabezpieczyć pewnie na takie same rundy
+            // @TODO ogólnie zweryfikować endpointy pod kątem bezpieczeństwa i exploitów
             if (cardGameUsersConnectionDto?.UserConnection == null)
             {
                 throw new NotFoundException("CONNECTED USER NOT FOUND");
@@ -92,6 +94,11 @@ namespace web_bite_server.Services.CardGame
         // Koniec tury
         public async Task EndTurn(List<CardGameCardDto> playedCards, CardGameUsersConnectionDto cardGameUsersConnectionDto)
         {
+            // @TODO pewnie wszędzie trzeba ten warunek dodać w endpointach do gry
+            if (cardGameUsersConnectionDto.UserConnection.Round > 3)
+            {
+                throw new BadHttpRequestException("MAX TURN COUNT IS 3");
+            }
             if (playedCards.Count == 0)
             {
                 throw new BadHttpRequestException("YOU HAVE TO PLAY AT LEAST ONE CARD");
@@ -142,6 +149,8 @@ namespace web_bite_server.Services.CardGame
 
             var playerHitpoints = cardGameUsersConnectionDto.UserConnection.HitPoints;
             var enemyHitpoints = cardGameUsersConnectionDto.EnemyUserConnection.HitPoints;
+            var round = cardGameUsersConnectionDto.UserConnection.Round;
+            var roundPoints = cardGameUsersConnectionDto.UserConnection.RoundPoints;
 
             var playerAttack = 0;
             var playerDefense = 0;
@@ -179,6 +188,20 @@ namespace web_bite_server.Services.CardGame
                 await _cardGameGameRepository.UpdatePlayerHPAfterRoundEnds(cardGameUsersConnectionDto.UserConnection, playerHitpoints);
                 await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.UserConnection, cardGameCard);
 
+                if (cardGameUsersConnectionDto.UserConnection.Round >= 3 || enemyHitpoints <= 0 || playerHitpoints <= 0)
+                {
+                    await _cardGameGameRepository.DeletePlayerHandCards(cardGameUsersConnectionDto.UserConnection);
+                    if (playerHitpoints > enemyHitpoints || enemyHitpoints <= 0)
+                    {
+                        roundPoints++;
+                        await _cardGameGameRepository.AddRoundPoints(cardGameUsersConnectionDto.UserConnection, roundPoints);
+                    }
+                    round = 0;
+                    playerHitpoints = 30;
+                    enemyHitpoints = 30;
+                    await _cardGameGameRepository.ResetPlayerParams(cardGameUsersConnectionDto.UserConnection);
+                }
+
                 transaction.Commit();
             }
             catch (Exception)
@@ -191,6 +214,8 @@ namespace web_bite_server.Services.CardGame
             {
                 PlayerHitpoints = playerHitpoints,
                 EnemyHitpoints = enemyHitpoints,
+                Round = round,
+                Points = roundPoints
             };
         }
     }

@@ -32,10 +32,26 @@ namespace web_bite_server.Repository
             await _dbContext.SaveChangesAsync();
         }
 
-        // Aktualizuj parametry gracza po zakończeniu tury
+        // Aktualizuj punkty zdrowia gracza po zakończeniu tury
         public async Task UpdatePlayerHPAfterRoundEnds(CardGameConnection userConnection, int playerHitpoints)
         {
             userConnection.HitPoints = playerHitpoints;
+            await _dbContext.SaveChangesAsync();
+        }
+
+
+        // Aktualizuj parametry gracza po zakończeniu rundy
+        public async Task ResetPlayerParams(CardGameConnection userConnection)
+        {
+            userConnection.Round = 0;
+            userConnection.HitPoints = 30;
+            await _dbContext.SaveChangesAsync();
+        }
+
+        // Dodaj punkt za wygraną rundę
+        public async Task AddRoundPoints(CardGameConnection userConnection, int roundPoints)
+        {
+            userConnection.RoundPoints = roundPoints;
             await _dbContext.SaveChangesAsync();
         }
 
@@ -146,6 +162,17 @@ namespace web_bite_server.Repository
                .ToListAsync();
 
             _dbContext.CardGamePlayerPlayed.RemoveRange(userCardGamePlayed);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        // Usuń karty użytkownika z ręki
+        public async Task DeletePlayerHandCards(CardGameConnection userConnection)
+        {
+            var userCardGameHand = await _dbContext.CardGamePlayerHand
+               .Where(p => p.CardGameConnectionId == userConnection.Id)
+               .ToListAsync();
+
+            _dbContext.CardGamePlayerHand.RemoveRange(userCardGameHand);
             await _dbContext.SaveChangesAsync();
         }
 
