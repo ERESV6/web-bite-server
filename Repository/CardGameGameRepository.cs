@@ -16,19 +16,26 @@ namespace web_bite_server.Repository
         }
 
         // Dodaj karty do ręki gracza
-        public async Task AddCardsToCardGameHand(CardGameConnection userConnection, IEnumerable<CardGameCard> cardGameCards)
+        public async Task AddCardsToCardGameHand(CardGameConnection userConnection, List<CardGameCardDto> cardGameCardDto, int round)
         {
+            var cardGameCards = cardGameCardDto.Select(i => new CardGameCard
+            {
+                Id = i.Id,
+                CardName = i.CardName,
+                Label = i.Label,
+                AttackValue = i.AttackValue,
+                DefenseValue = i.DefenseValue,
+                SpecialAbility = i.SpecialAbility
+            });
             userConnection.CardGamePlayerHand.AddRange(cardGameCards);
-            userConnection.Round = 1;
+            userConnection.Round = round;
             await _dbContext.SaveChangesAsync();
         }
 
         // Aktualizuj parametry gracza po zakończeniu tury
-        public async Task UpdatePlayerAfterRoundEnds(CardGameConnection userConnection, int playerHitpoints, int round)
+        public async Task UpdatePlayerHPAfterRoundEnds(CardGameConnection userConnection, int playerHitpoints)
         {
             userConnection.HitPoints = playerHitpoints;
-            userConnection.Round = round;
-
             await _dbContext.SaveChangesAsync();
         }
 

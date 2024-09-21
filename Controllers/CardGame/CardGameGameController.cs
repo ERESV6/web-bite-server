@@ -35,6 +35,14 @@ namespace web_bite_server.Controllers.CardGame
             return Ok(await _cardGameGameService.GetAllCardsExceptPlayerHand(connectedUserCardGameConnection.UserConnection));
         }
 
+        [HttpGet("enemy-hand")]
+        [Produces("application/json")]
+        public async Task<ActionResult<int>> GetNumberOfEnemyPlayerHand()
+        {
+            var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
+            return Ok(await _cardGameGameService.GetNumberOfEnemyPlayerHand(connectedUserCardGameConnection.EnemyUserConnection));
+        }
+
         [HttpPost("add-cards-to-game")]
         [Produces("application/json")]
         public async Task<ActionResult<List<CardGameCardDto>>> AddCardsToGame([FromBody] List<int> cardGameIds)

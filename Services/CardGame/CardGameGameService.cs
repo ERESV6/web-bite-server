@@ -32,6 +32,13 @@ namespace web_bite_server.Services.CardGame
             return await _cardGameCardRepository.GetCardsExceptIds(cardGameHand.Select(i => i.Id));
         }
 
+        // Pobiera liczbę kart w ręce przeciwnika
+        public async Task<int> GetNumberOfEnemyPlayerHand(CardGameConnection userConnection)
+        {
+            var cardGameHand = await _cardGameGameRepository.GetUserCardGameHandExceptPlayed(userConnection);
+            return cardGameHand.Count;
+        }
+
         // Dodaje wybrane karty do ręki użytkownika
         public async Task<List<CardGameCardDto>?> AddCardsToCardGameHand(List<int> cardGameIds, CardGameUsersConnectionDto? cardGameUsersConnectionDto)
         {
@@ -53,12 +60,17 @@ namespace web_bite_server.Services.CardGame
                 throw new BadHttpRequestException("SOME CARD IDS DOESN'T EXISTS");
             }
 
-            await _cardGameGameRepository.AddCardsToCardGameHand(cardGameUsersConnectionDto.UserConnection, cardGameCards);
             var cardGameHand = await _cardGameGameRepository.GetUserCardGameHandExceptPlayed(cardGameUsersConnectionDto.UserConnection);
+            if (cardGameHand.Count + cardGameCards.Count > 10)
+            {
+                throw new BadHttpRequestException("SUM OF CARDS IS MORE THAN 10");
+            }
 
-            await _hubContext.Clients.Client(cardGameUsersConnectionDto.EnemyUserConnection.ConnectionId).SendRound(1);
+            var round = cardGameUsersConnectionDto.UserConnection.Round + 1;
+            await _cardGameGameRepository.AddCardsToCardGameHand(cardGameUsersConnectionDto.UserConnection, cardGameCards, round);
+            await _hubContext.Clients.Client(cardGameUsersConnectionDto.EnemyUserConnection.ConnectionId).SendRound(round);
 
-            return cardGameHand;
+            return [.. cardGameHand, .. cardGameCards];
         }
 
         // Sprawdza czy zagrane karty rzeczywiście istnieją
@@ -130,7 +142,6 @@ namespace web_bite_server.Services.CardGame
 
             var playerHitpoints = cardGameUsersConnectionDto.UserConnection.HitPoints;
             var enemyHitpoints = cardGameUsersConnectionDto.EnemyUserConnection.HitPoints;
-            var round = cardGameUsersConnectionDto.UserConnection.Round;
 
             var playerAttack = 0;
             var playerDefense = 0;
@@ -151,7 +162,6 @@ namespace web_bite_server.Services.CardGame
 
             playerHitpoints += -(enemyAttack - playerDefense > 0 ? enemyAttack - playerDefense : 0);
             enemyHitpoints += -(playerAttack - enemyDefense > 0 ? playerAttack - enemyDefense : 0);
-            round += 1;
 
             var cardGameCard = userPlayedCards.Select(c => new CardGameCard
             {
@@ -166,7 +176,7 @@ namespace web_bite_server.Services.CardGame
             using var transaction = _cardGameGameRepository.CardGameGameRepositoryTransaction();
             try
             {
-                await _cardGameGameRepository.UpdatePlayerAfterRoundEnds(cardGameUsersConnectionDto.UserConnection, playerHitpoints, round);
+                await _cardGameGameRepository.UpdatePlayerHPAfterRoundEnds(cardGameUsersConnectionDto.UserConnection, playerHitpoints);
                 await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.UserConnection, cardGameCard);
 
                 transaction.Commit();
@@ -181,8 +191,8 @@ namespace web_bite_server.Services.CardGame
             {
                 PlayerHitpoints = playerHitpoints,
                 EnemyHitpoints = enemyHitpoints,
-                Round = round
             };
         }
     }
 }
+
