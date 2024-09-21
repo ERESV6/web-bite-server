@@ -27,6 +27,14 @@ namespace web_bite_server.Controllers.CardGame
             _cardGameGameService = cardGameGameService;
         }
 
+        [HttpGet("all-except-hand")]
+        [Produces("application/json")]
+        public async Task<ActionResult<List<CardGameCardDto>>> GetAllCardsExceptPlayerHand()
+        {
+            var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
+            return Ok(await _cardGameGameService.GetAllCardsExceptPlayerHand(connectedUserCardGameConnection.UserConnection));
+        }
+
         [HttpPost("add-cards-to-game")]
         [Produces("application/json")]
         public async Task<ActionResult<List<CardGameCardDto>>> AddCardsToGame([FromBody] List<int> cardGameIds)
@@ -62,14 +70,11 @@ namespace web_bite_server.Controllers.CardGame
 
         [HttpPost("calculate-round-result")]
         [Produces("application/json")]
-        public ActionResult<string> CalculateRoundResult()
+        public async Task<ActionResult<RoundResultDto>> CalculateRoundResult()
         {
-            // dodać rundy
-            // wyliczyć wynik i wyświetlić
-            // zabrać hp
-            // trigger nowych 5 kart, sprawdzić max 10 kart na reke
-            // i ogarnac te warunki z check card number bo juz nie bedzie na sztywno 5
-            return Ok("ROUND ENDED");
+            var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
+            var roundResult = await _cardGameGameService.CalculateRoundResult(connectedUserCardGameConnection);
+            return Ok(roundResult);
         }
     }
 }

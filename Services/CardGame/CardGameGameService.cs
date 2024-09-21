@@ -25,6 +25,14 @@ namespace web_bite_server.Services.CardGame
             _hubContext = hubContext;
         }
 
+        // Pobiera wszystkie karty, poza wcześniej wybranymi
+        public async Task<List<CardGameCardDto>> GetAllCardsExceptPlayerHand(CardGameConnection userConnection)
+        {
+            var cardGameHand = await _cardGameGameRepository.GetUserCardGameHand(userConnection);
+            return await _cardGameCardRepository.GetCardsExceptIds(cardGameHand.Select(i => i.Id));
+        }
+
+        // Dodaje wybrane karty do ręki użytkownika
         public async Task<List<CardGameCardDto>?> AddCardsToCardGameHand(List<int> cardGameIds, CardGameUsersConnectionDto? cardGameUsersConnectionDto)
         {
             if (cardGameUsersConnectionDto?.UserConnection == null)
@@ -33,26 +41,27 @@ namespace web_bite_server.Services.CardGame
             }
 
             // @TODO const z backendu
-            if (cardGameIds.Count != 5)
+            if (cardGameIds.Count <= 0 && cardGameIds.Count > 5)
             {
-                throw new BadHttpRequestException("NUMBER OF CARD IDS MUST BE EQUAL TO 10");
+                throw new BadHttpRequestException("NUMBER OF CARD IDS MUST BE BETWEEN 1 TO 5");
             }
 
             var cardGameCards = await _cardGameCardRepository.GetCardsByIds(cardGameIds);
             // @TODO const z backendu
-            if (cardGameCards.Count != 5)
+            if (cardGameCards.Count != cardGameIds.Count)
             {
                 throw new BadHttpRequestException("SOME CARD IDS DOESN'T EXISTS");
             }
 
             await _cardGameGameRepository.AddCardsToCardGameHand(cardGameUsersConnectionDto.UserConnection, cardGameCards);
-            var cardGameHand = await _cardGameGameRepository.GetUserCardGameHand(cardGameUsersConnectionDto.UserConnection);
+            var cardGameHand = await _cardGameGameRepository.GetUserCardGameHandExceptPlayed(cardGameUsersConnectionDto.UserConnection);
 
             await _hubContext.Clients.Client(cardGameUsersConnectionDto.EnemyUserConnection.ConnectionId).SendRound(1);
 
             return cardGameHand;
         }
 
+        // Sprawdza czy zagrane karty rzeczywiście istnieją
         public async Task<List<CardGameCardDto>> CheckPlayedCards(List<int> cardGameIds, CardGameUsersConnectionDto cardGameUsersConnectionDto)
         {
             var cardGameHand = await _cardGameGameRepository.GetUserCardGameHandByCardIds(cardGameUsersConnectionDto.UserConnection, cardGameIds);
@@ -68,6 +77,7 @@ namespace web_bite_server.Services.CardGame
             return cardGameHand;
         }
 
+        // Koniec tury
         public async Task EndTurn(List<CardGameCardDto> playedCards, CardGameUsersConnectionDto cardGameUsersConnectionDto)
         {
             if (playedCards.Count == 0)
@@ -93,7 +103,7 @@ namespace web_bite_server.Services.CardGame
             try
             {
                 await _cardGameGameRepository.AddPlayedCards(cardGameUsersConnectionDto.UserConnection, cardGameCard);
-                await _cardGameGameRepository.DeletePlayedCardsFromHand(cardGameUsersConnectionDto.UserConnection, cardGameCard);
+                await _cardGameGameRepository.MarkPlayedCardsAsPlayedFromHand(cardGameUsersConnectionDto.UserConnection, cardGameCard);
 
                 transaction.Commit();
             }
@@ -102,6 +112,77 @@ namespace web_bite_server.Services.CardGame
                 transaction.Rollback();
                 throw new Exception("TRANSACTION ROLLED BACK");
             }
+        }
+
+        // Sprawdza zagrane karty obu graczy i zlicza odebrane punkty zdrowia
+        public async Task<RoundResultDto> CalculateRoundResult(CardGameUsersConnectionDto cardGameUsersConnectionDto)
+        {
+            var userPlayedCards = await _cardGameGameRepository.GetUserCardGamePlayedCards(cardGameUsersConnectionDto.UserConnection);
+            if (userPlayedCards.Count == 0)
+            {
+                throw new BadHttpRequestException("USER DID NOT PLAY ANY CARD");
+            }
+            var enemyPlayedCards = await _cardGameGameRepository.GetUserCardGamePlayedCards(cardGameUsersConnectionDto.EnemyUserConnection);
+            if (enemyPlayedCards.Count == 0)
+            {
+                throw new BadHttpRequestException("ENEMY DID NOT PLAY ANY CARD");
+            }
+
+            var playerHitpoints = cardGameUsersConnectionDto.UserConnection.HitPoints;
+            var enemyHitpoints = cardGameUsersConnectionDto.EnemyUserConnection.HitPoints;
+            var round = cardGameUsersConnectionDto.UserConnection.Round;
+
+            var playerAttack = 0;
+            var playerDefense = 0;
+            var enemyAttack = 0;
+            var enemyDefense = 0;
+
+            userPlayedCards.ForEach(card =>
+            {
+                playerAttack += card.AttackValue;
+                playerDefense += card.DefenseValue;
+            });
+
+            enemyPlayedCards.ForEach(card =>
+            {
+                enemyAttack += card.AttackValue;
+                enemyDefense += card.DefenseValue;
+            });
+
+            playerHitpoints += -(enemyAttack - playerDefense > 0 ? enemyAttack - playerDefense : 0);
+            enemyHitpoints += -(playerAttack - enemyDefense > 0 ? playerAttack - enemyDefense : 0);
+            round += 1;
+
+            var cardGameCard = userPlayedCards.Select(c => new CardGameCard
+            {
+                AttackValue = c.AttackValue,
+                CardName = c.CardName,
+                DefenseValue = c.DefenseValue,
+                Id = c.Id,
+                Label = c.Label,
+                SpecialAbility = c.SpecialAbility
+            });
+
+            using var transaction = _cardGameGameRepository.CardGameGameRepositoryTransaction();
+            try
+            {
+                await _cardGameGameRepository.UpdatePlayerAfterRoundEnds(cardGameUsersConnectionDto.UserConnection, playerHitpoints, round);
+                await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.UserConnection, cardGameCard);
+
+                transaction.Commit();
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                throw new Exception("TRANSACTION ROLLED BACK");
+            }
+
+            return new RoundResultDto
+            {
+                PlayerHitpoints = playerHitpoints,
+                EnemyHitpoints = enemyHitpoints,
+                Round = round
+            };
         }
     }
 }

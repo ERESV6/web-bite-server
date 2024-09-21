@@ -99,6 +99,7 @@ app.Run();
 /**
     REFACTOR:
     - minmax card to constants
+    - userConnection.HitPoints to constant, jakis gameconfig ogarnac
     - rozdzial controler service repository na routes i wszystko per katalog
     - mappery
 

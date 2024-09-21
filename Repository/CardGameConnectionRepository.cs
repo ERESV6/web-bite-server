@@ -33,6 +33,8 @@ namespace web_bite_server.Repository
             }
             userConnection.UserToId = userConnection.UserToRequestPendingId;
             userToConnection.UserToId = userToConnection.UserToRequestPendingId;
+            userConnection.HitPoints = 30;
+            userToConnection.HitPoints = 30;
 
             userConnection.UserToRequestPendingId = string.Empty;
             userToConnection.UserToRequestPendingId = string.Empty;

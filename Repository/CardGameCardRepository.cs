@@ -29,10 +29,16 @@ namespace web_bite_server.Repository
         public async Task<List<CardGameCard>> GetCardsByIds(List<int> cardGameIds)
         {
             // todo mappers
-            return await _dBContext.CardGameCard.Where(c => cardGameIds.Contains(c.Id)).Select(c => new CardGameCard
+            return await _dBContext.CardGameCard.Where(c => cardGameIds.Contains(c.Id)).ToListAsync();
+        }
+
+        public async Task<List<CardGameCardDto>> GetCardsExceptIds(IEnumerable<int> cardGameIds)
+        {
+            // todo mappers
+            return await _dBContext.CardGameCard.Where(c => !cardGameIds.Contains(c.Id)).Select(c => new CardGameCardDto
             {
-                AttackValue = c.AttackValue,
                 CardName = c.CardName,
+                AttackValue = c.AttackValue,
                 DefenseValue = c.DefenseValue,
                 Id = c.Id,
                 Label = c.Label,
