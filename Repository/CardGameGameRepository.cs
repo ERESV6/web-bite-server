@@ -1,8 +1,10 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using web_bite_server.Constants;
 using web_bite_server.Data;
 using web_bite_server.Dtos.CardGame;
+using web_bite_server.Mappers;
 using web_bite_server.Models;
 
 namespace web_bite_server.Repository
@@ -15,7 +17,7 @@ namespace web_bite_server.Repository
             _dbContext = dBContext;
         }
 
-        // Dodaj karty do ręki gracza
+        // Dodaj karty do ręki gracza - dodaj karty, zwiększ runde, ustaw flagę końca tury na false
         public async Task AddCardsToCardGameHand(CardGameConnection userConnection, List<CardGameCardDto> cardGameCardDto, int round)
         {
             var cardGameCards = cardGameCardDto.Select(i => new CardGameCard
@@ -27,8 +29,10 @@ namespace web_bite_server.Repository
                 DefenseValue = i.DefenseValue,
                 SpecialAbility = i.SpecialAbility
             });
+
             userConnection.CardGamePlayerHand.AddRange(cardGameCards);
             userConnection.Round = round;
+            userConnection.IsEndTurn = false;
             await _dbContext.SaveChangesAsync();
         }
 
@@ -44,7 +48,7 @@ namespace web_bite_server.Repository
         public async Task ResetPlayerParams(CardGameConnection userConnection)
         {
             userConnection.Round = 0;
-            userConnection.HitPoints = 30;
+            userConnection.HitPoints = CardGameConfig.UserHitPoints;
             await _dbContext.SaveChangesAsync();
         }
 
@@ -95,7 +99,7 @@ namespace web_bite_server.Repository
             return userCardGameHand;
         }
 
-        // Pobierz karty w ręce uzytkownika poza kartami zagranymi
+        // Pobierz karty w ręce uzytkownika
         public async Task<List<CardGameCardDto>> GetUserCardGameHandExceptPlayed(CardGameConnection userConnection)
         {
             var userCardGameHand = await _dbContext.CardGamePlayerHand
@@ -119,7 +123,7 @@ namespace web_bite_server.Repository
         public async Task<List<CardGameCardDto>?> GetUserCardGameHandByCardIds(CardGameConnection userConnection, List<int> cardGameIds)
         {
             var userCardGameHand = await _dbContext.CardGamePlayerHand
-                .Where(p => p.CardGameConnectionId == userConnection.Id && cardGameIds.Contains(p.CardGameCardId))
+                .Where(p => p.CardGameConnectionId == userConnection.Id && cardGameIds.Contains(p.CardGameCardId) && !p.WasPlayed)
                 .Select(i => i.CardGameCard)
                 .Select(c => new CardGameCardDto
                 {
@@ -135,10 +139,11 @@ namespace web_bite_server.Repository
             return userCardGameHand;
         }
 
-        // Dodaj zagrane karty użytkownika 
+        // Dodaj zagrane karty użytkownika, ustaw flagę zakończenia tury na true
         public async Task AddPlayedCards(CardGameConnection userConnection, IEnumerable<CardGameCard> playedCards)
         {
             userConnection.CardGamePlayerPlayed.AddRange(playedCards);
+            userConnection.IsEndTurn = true;
             await _dbContext.SaveChangesAsync();
         }
 

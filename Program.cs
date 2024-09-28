@@ -35,6 +35,7 @@ builder.Services.AddSignalR();
 
 builder.Services.AddDbContext<ApplicationDBContext>(options =>
 {
+    options.EnableSensitiveDataLogging();
     options.UseSqlServer(builder.Configuration.GetConnectionString("WebBiteConnectionString"));
 });
 
@@ -94,14 +95,4 @@ app.MapHub<CardGameHub>("card-game-hub");
 app.UseExceptionHandler();
 
 app.Run();
-
-
-/**
-    REFACTOR:
-    - minmax card to constants
-    - userConnection.HitPoints to constant, jakis gameconfig ogarnac
-    - rozdzial controler service repository na routes i wszystko per katalog
-    - mappery
-
-*/
 
