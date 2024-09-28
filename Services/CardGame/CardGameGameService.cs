@@ -3,7 +3,6 @@ using web_bite_server.Constants;
 using web_bite_server.Dtos.CardGame;
 using web_bite_server.Hubs;
 using web_bite_server.interfaces.CardGame;
-using web_bite_server.Mappers;
 using web_bite_server.Models;
 using web_bite_server.Repository;
 
@@ -76,7 +75,15 @@ namespace web_bite_server.Services.CardGame
             {
                 throw new BadHttpRequestException("YOU HAVE TO PLAY AT LEAST ONE CARD");
             }
-            var cardGameCard = playedCards.Select(c => c.ToCardGameCard());
+            var cardGameCard = playedCards.Select(c => new CardGameCard
+            {
+                AttackValue = c.AttackValue,
+                CardName = c.CardName,
+                DefenseValue = c.DefenseValue,
+                Id = c.Id,
+                Label = c.Label,
+                SpecialAbility = c.SpecialAbility
+            });
 
             using var transaction = _cardGameGameRepository.CardGameGameRepositoryTransaction();
             try
@@ -136,7 +143,15 @@ namespace web_bite_server.Services.CardGame
             playerHitpoints += -(enemyAttack - playerDefense > 0 ? enemyAttack - playerDefense : 0);
             enemyHitpoints += -(playerAttack - enemyDefense > 0 ? playerAttack - enemyDefense : 0);
 
-            var cardGameCard = userPlayedCards.Select(c => c.ToCardGameCard());
+            var cardGameCard = userPlayedCards.Select(c => new CardGameCard
+            {
+                AttackValue = c.AttackValue,
+                CardName = c.CardName,
+                DefenseValue = c.DefenseValue,
+                Id = c.Id,
+                Label = c.Label,
+                SpecialAbility = c.SpecialAbility
+            });
 
             using var transaction = _cardGameGameRepository.CardGameGameRepositoryTransaction();
             try

@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using web_bite_server.Constants;
 using web_bite_server.Data;
 using web_bite_server.Dtos.CardGame;
-using web_bite_server.Mappers;
 using web_bite_server.Models;
 
 namespace web_bite_server.Repository
@@ -58,7 +57,12 @@ namespace web_bite_server.Repository
         public async Task<List<CardGameActiveUserDto>> GetAllActiveCardGameConnectionsAsync()
         {
             var CardGameConnections = await _dbContext.CardGameConnection.Include(i => i.AppUser).ToListAsync();
-            var activeCardGameConnections = CardGameConnections.Select(c => c.ToCardGameActiveUserDto()).ToList();
+            var activeCardGameConnections = CardGameConnections.Select(c => new CardGameActiveUserDto
+            {
+                ConnectionId = c.ConnectionId,
+                UserName = c.AppUser.UserName,
+                IsAvaliable = !(c.UserToId?.Length > 0 || c.UserToRequestPendingId?.Length > 0)
+            }).ToList();
             return activeCardGameConnections;
         }
 

@@ -96,3 +96,4 @@ app.UseExceptionHandler();
 
 app.Run();
 
+// @TODO automapper

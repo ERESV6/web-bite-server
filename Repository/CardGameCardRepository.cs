@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using web_bite_server.Data;
 using web_bite_server.Dtos.CardGame;
-using web_bite_server.Mappers;
 
 namespace web_bite_server.Repository
 {
