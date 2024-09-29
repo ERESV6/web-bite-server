@@ -62,7 +62,7 @@ namespace web_bite_server.Services.CardGame
                 throw new BadHttpRequestException("SUM OF CARDS IS MORE THAN " + CardGameConfig.MaxCardsInHand);
             }
             var round = cardGameUsersConnectionDto.UserConnection.Round + 1;
-            await _cardGameGameRepository.AddCardsToCardGameHand(cardGameUsersConnectionDto.UserConnection, cardGameCards, round);
+            await _cardGameGameRepository.AddCardsToCardGameHand(cardGameUsersConnectionDto.UserConnection, cardGameIds, round);
             await _hubContext.Clients.Client(cardGameUsersConnectionDto.EnemyUserConnection.ConnectionId).SendRound(round);
 
             return [.. cardGameHand, .. cardGameCards];
@@ -75,21 +75,13 @@ namespace web_bite_server.Services.CardGame
             {
                 throw new BadHttpRequestException("YOU HAVE TO PLAY AT LEAST ONE CARD");
             }
-            var cardGameCard = playedCards.Select(c => new CardGameCard
-            {
-                AttackValue = c.AttackValue,
-                CardName = c.CardName,
-                DefenseValue = c.DefenseValue,
-                Id = c.Id,
-                Label = c.Label,
-                SpecialAbility = c.SpecialAbility
-            });
 
             using var transaction = _cardGameGameRepository.CardGameGameRepositoryTransaction();
             try
             {
-                await _cardGameGameRepository.AddPlayedCards(cardGameUsersConnectionDto.UserConnection, cardGameCard);
-                await _cardGameGameRepository.MarkPlayedCardsAsPlayedFromHand(cardGameUsersConnectionDto.UserConnection, cardGameCard);
+                var playedCardIds = playedCards.Select(c => c.Id);
+                await _cardGameGameRepository.AddPlayedCards(cardGameUsersConnectionDto.UserConnection, playedCardIds);
+                await _cardGameGameRepository.MarkPlayedCardsAsPlayedFromHand(cardGameUsersConnectionDto.UserConnection, playedCardIds);
 
                 transaction.Commit();
             }
@@ -143,21 +135,14 @@ namespace web_bite_server.Services.CardGame
             playerHitpoints += -(enemyAttack - playerDefense > 0 ? enemyAttack - playerDefense : 0);
             enemyHitpoints += -(playerAttack - enemyDefense > 0 ? playerAttack - enemyDefense : 0);
 
-            var cardGameCard = userPlayedCards.Select(c => new CardGameCard
-            {
-                AttackValue = c.AttackValue,
-                CardName = c.CardName,
-                DefenseValue = c.DefenseValue,
-                Id = c.Id,
-                Label = c.Label,
-                SpecialAbility = c.SpecialAbility
-            });
+
 
             using var transaction = _cardGameGameRepository.CardGameGameRepositoryTransaction();
             try
             {
+                var playedCardIds = userPlayedCards.Select(c => c.Id);
                 await _cardGameGameRepository.UpdatePlayerHPAfterRoundEnds(cardGameUsersConnectionDto.UserConnection, playerHitpoints);
-                await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.UserConnection, cardGameCard);
+                await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.UserConnection, playedCardIds);
 
                 if (cardGameUsersConnectionDto.UserConnection.Round >= CardGameConfig.MaxRoundsToEndGame || enemyHitpoints <= 0 || playerHitpoints <= 0)
                 {

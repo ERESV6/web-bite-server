@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using web_bite_server.Constants;
 using web_bite_server.Data;
 using web_bite_server.Dtos.CardGame;
+using web_bite_server.Mappers;
 using web_bite_server.Models;
 
 namespace web_bite_server.Repository
@@ -17,21 +18,19 @@ namespace web_bite_server.Repository
         }
 
         // Dodaj karty do ręki gracza - dodaj karty, zwiększ runde, ustaw flagę końca tury na false
-        public async Task AddCardsToCardGameHand(CardGameConnection userConnection, List<CardGameCardDto> cardGameCardDto, int round)
+        public async Task AddCardsToCardGameHand(CardGameConnection userConnection, List<int> cardGameIds, int round)
         {
-            var cardGameCards = cardGameCardDto.Select(i => new CardGameCard
+            var cardGameCards = cardGameIds.Select(i => new CardGamePlayerHand
             {
-                Id = i.Id,
-                CardName = i.CardName,
-                Label = i.Label,
-                AttackValue = i.AttackValue,
-                DefenseValue = i.DefenseValue,
-                SpecialAbility = i.SpecialAbility
+                CardGameCardId = i,
+                CardGameConnectionId = userConnection.Id,
+                WasPlayed = false
             });
 
-            userConnection.CardGamePlayerHand.AddRange(cardGameCards);
             userConnection.Round = round;
             userConnection.IsEndTurn = false;
+            _dbContext.CardGamePlayerHand.AddRange(cardGameCards);
+
             await _dbContext.SaveChangesAsync();
         }
 
@@ -64,15 +63,7 @@ namespace web_bite_server.Repository
             var userCardGamePlayed = await _dbContext.CardGamePlayerPlayed
                 .Where(p => p.CardGameConnectionId == userConnection.Id)
                 .Select(i => i.CardGameCard)
-                .Select(c => new CardGameCardDto
-                {
-                    CardName = c.CardName,
-                    AttackValue = c.AttackValue,
-                    DefenseValue = c.DefenseValue,
-                    Id = c.Id,
-                    Label = c.Label,
-                    SpecialAbility = c.SpecialAbility
-                })
+                .Select(c => c.ToCardGameCardDto())
                 .ToListAsync();
 
             return userCardGamePlayed;
@@ -84,15 +75,7 @@ namespace web_bite_server.Repository
             var userCardGameHand = await _dbContext.CardGamePlayerHand
                 .Where(p => p.CardGameConnectionId == userConnection.Id)
                 .Select(i => i.CardGameCard)
-                .Select(c => new CardGameCardDto
-                {
-                    CardName = c.CardName,
-                    AttackValue = c.AttackValue,
-                    DefenseValue = c.DefenseValue,
-                    Id = c.Id,
-                    Label = c.Label,
-                    SpecialAbility = c.SpecialAbility
-                })
+                .Select(c => c.ToCardGameCardDto())
                 .ToListAsync();
 
             return userCardGameHand;
@@ -104,15 +87,7 @@ namespace web_bite_server.Repository
             var userCardGameHand = await _dbContext.CardGamePlayerHand
                 .Where(p => p.CardGameConnectionId == userConnection.Id && !p.WasPlayed)
                 .Select(i => i.CardGameCard)
-                .Select(c => new CardGameCardDto
-                {
-                    CardName = c.CardName,
-                    AttackValue = c.AttackValue,
-                    DefenseValue = c.DefenseValue,
-                    Id = c.Id,
-                    Label = c.Label,
-                    SpecialAbility = c.SpecialAbility
-                })
+                .Select(c => c.ToCardGameCardDto())
                 .ToListAsync();
 
             return userCardGameHand;
@@ -124,45 +99,41 @@ namespace web_bite_server.Repository
             var userCardGameHand = await _dbContext.CardGamePlayerHand
                 .Where(p => p.CardGameConnectionId == userConnection.Id && cardGameIds.Contains(p.CardGameCardId) && !p.WasPlayed)
                 .Select(i => i.CardGameCard)
-                .Select(c => new CardGameCardDto
-                {
-                    CardName = c.CardName,
-                    AttackValue = c.AttackValue,
-                    DefenseValue = c.DefenseValue,
-                    Id = c.Id,
-                    Label = c.Label,
-                    SpecialAbility = c.SpecialAbility
-                })
+                .Select(c => c.ToCardGameCardDto())
                 .ToListAsync();
 
             return userCardGameHand;
         }
 
         // Dodaj zagrane karty użytkownika, ustaw flagę zakończenia tury na true
-        public async Task AddPlayedCards(CardGameConnection userConnection, IEnumerable<CardGameCard> playedCards)
+        public async Task AddPlayedCards(CardGameConnection userConnection, IEnumerable<int> playedCardIds)
         {
-            userConnection.CardGamePlayerPlayed.AddRange(playedCards);
+            var cardGamePlayedCards = playedCardIds.Select(i => new CardGamePlayerPlayed
+            {
+                CardGameCardId = i,
+                CardGameConnectionId = userConnection.Id
+            });
+
+            _dbContext.CardGamePlayerPlayed.AddRange(cardGamePlayedCards);
             userConnection.IsEndTurn = true;
             await _dbContext.SaveChangesAsync();
         }
 
         // Oznacz karty z ręki jako zagrane
-        public async Task MarkPlayedCardsAsPlayedFromHand(CardGameConnection userConnection, IEnumerable<CardGameCard> playedCards)
+        public async Task MarkPlayedCardsAsPlayedFromHand(CardGameConnection userConnection, IEnumerable<int> playedCardIds)
         {
-            var cardsIds = playedCards.Select(c => c.Id);
             var userCardGameHand = await _dbContext.CardGamePlayerHand
-               .Where(p => p.CardGameConnectionId == userConnection.Id && cardsIds.Contains(p.CardGameCardId))
+               .Where(p => p.CardGameConnectionId == userConnection.Id && playedCardIds.Contains(p.CardGameCardId))
                .ToListAsync();
             userCardGameHand.ForEach(i => { i.WasPlayed = true; });
             await _dbContext.SaveChangesAsync();
         }
 
         // Usuń zagrane karty użytkownika
-        public async Task DeletePlayedCards(CardGameConnection userConnection, IEnumerable<CardGameCard> playedCards)
+        public async Task DeletePlayedCards(CardGameConnection userConnection, IEnumerable<int> playedCardIds)
         {
-            var cardsIds = playedCards.Select(c => c.Id);
             var userCardGamePlayed = await _dbContext.CardGamePlayerPlayed
-               .Where(p => p.CardGameConnectionId == userConnection.Id && cardsIds.Contains(p.CardGameCardId))
+               .Where(p => p.CardGameConnectionId == userConnection.Id && playedCardIds.Contains(p.CardGameCardId))
                .ToListAsync();
 
             _dbContext.CardGamePlayerPlayed.RemoveRange(userCardGamePlayed);

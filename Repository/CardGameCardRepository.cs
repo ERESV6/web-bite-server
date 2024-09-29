@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using web_bite_server.Data;
 using web_bite_server.Dtos.CardGame;
+using web_bite_server.Mappers;
 
 namespace web_bite_server.Repository
 {
@@ -13,44 +14,18 @@ namespace web_bite_server.Repository
         }
         public async Task<List<CardGameCardDto>> GetAllCards()
         {
-            // todo mappers
-            return await _dBContext.CardGameCard.Select(c => new CardGameCardDto
-            {
-                CardName = c.CardName,
-                AttackValue = c.AttackValue,
-                DefenseValue = c.DefenseValue,
-                Id = c.Id,
-                Label = c.Label,
-                SpecialAbility = c.SpecialAbility
-            }).ToListAsync();
+            return await _dBContext.CardGameCard.Select(c => c.ToCardGameCardDto()).ToListAsync();
         }
 
         public async Task<List<CardGameCardDto>> GetCardsByIds(List<int> cardGameIds)
         {
-            // todo mappers
-            return await _dBContext.CardGameCard.Where(c => cardGameIds.Contains(c.Id)).Select(c => new CardGameCardDto
-            {
-                CardName = c.CardName,
-                AttackValue = c.AttackValue,
-                DefenseValue = c.DefenseValue,
-                Id = c.Id,
-                Label = c.Label,
-                SpecialAbility = c.SpecialAbility
-            }).ToListAsync();
+            return await _dBContext.CardGameCard.Where(c => cardGameIds.Contains(c.Id)).Select(c => c.ToCardGameCardDto()).ToListAsync();
         }
 
         public async Task<List<CardGameCardDto>> GetCardsExceptIds(IEnumerable<int> cardGameIds)
         {
-            // todo mappers
-            return await _dBContext.CardGameCard.Where(c => !cardGameIds.Contains(c.Id)).Select(c => new CardGameCardDto
-            {
-                CardName = c.CardName,
-                AttackValue = c.AttackValue,
-                DefenseValue = c.DefenseValue,
-                Id = c.Id,
-                Label = c.Label,
-                SpecialAbility = c.SpecialAbility
-            }).ToListAsync();
+            return await _dBContext.CardGameCard.Where(c => !cardGameIds.Contains(c.Id)).Select(c => c.ToCardGameCardDto()).ToListAsync();
         }
+
     }
 }

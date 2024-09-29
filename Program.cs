@@ -96,4 +96,4 @@ app.UseExceptionHandler();
 
 app.Run();
 
-// @TODO automapper
+// @TODO sprawdzic dodawanie danych przez identity - czy jest, jak jest to przerobic aby bezposrednio na baze/tabelke sie to wrzucalo
