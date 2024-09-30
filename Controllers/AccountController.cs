@@ -80,7 +80,7 @@ namespace web_bite_server.Controllers
                 return Unauthorized("Invalid email");
             }
 
-            var result = await _signInManager.PasswordSignInAsync(user.UserName, loginDto.Password, false, false);
+            var result = await _signInManager.PasswordSignInAsync(user.UserName ?? "", loginDto.Password, false, false);
             if (!result.Succeeded)
             {
                 return Unauthorized("Email or password incorrect");
@@ -88,8 +88,8 @@ namespace web_bite_server.Controllers
 
             return Ok(new UserDto
             {
-                Username = user.UserName,
-                Email = user.Email
+                Username = user.UserName ?? "",
+                Email = user.Email ?? ""
             });
         }
 
@@ -115,8 +115,8 @@ namespace web_bite_server.Controllers
 
             return Ok(new UserDto
             {
-                Username = user.UserName,
-                Email = user.Email
+                Username = user.UserName ?? "",
+                Email = user.Email ?? ""
             });
         }
     }

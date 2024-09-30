@@ -95,5 +95,3 @@ app.MapHub<CardGameHub>("card-game-hub");
 app.UseExceptionHandler();
 
 app.Run();
-
-// @TODO sprawdzic dodawanie danych przez identity - czy jest, jak jest to przerobic aby bezposrednio na baze/tabelke sie to wrzucalo

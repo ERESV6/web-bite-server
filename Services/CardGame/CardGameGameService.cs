@@ -144,7 +144,7 @@ namespace web_bite_server.Services.CardGame
                 await _cardGameGameRepository.UpdatePlayerHPAfterRoundEnds(cardGameUsersConnectionDto.UserConnection, playerHitpoints);
                 await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.UserConnection, playedCardIds);
 
-                if (cardGameUsersConnectionDto.UserConnection.Round >= CardGameConfig.MaxRoundsToEndGame || enemyHitpoints <= 0 || playerHitpoints <= 0)
+                if (cardGameUsersConnectionDto.UserConnection.Round >= CardGameConfig.MaxTurnsToEndRound || enemyHitpoints <= 0 || playerHitpoints <= 0)
                 {
                     await _cardGameGameRepository.DeletePlayerHandCards(cardGameUsersConnectionDto.UserConnection);
                     if (playerHitpoints > enemyHitpoints || enemyHitpoints <= 0)

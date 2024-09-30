@@ -6,6 +6,6 @@ namespace web_bite_server.Constants
         public static int MinCardsToAdd { get; } = 1;
         public static int MaxCardsToAdd { get; } = 5;
         public static int MaxCardsInHand { get; } = 10;
-        public static int MaxRoundsToEndGame { get; } = 3;
+        public static int MaxTurnsToEndRound { get; } = 3;
     }
 }
