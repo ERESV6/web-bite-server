@@ -110,51 +110,61 @@ namespace web_bite_server.Services.CardGame
                 throw new BadHttpRequestException("ENEMY DID NOT PLAY ANY CARD");
             }
 
-            var playerHitpoints = cardGameUsersConnectionDto.UserConnection.HitPoints;
-            var enemyHitpoints = cardGameUsersConnectionDto.EnemyUserConnection.HitPoints;
-            var round = cardGameUsersConnectionDto.UserConnection.Round;
-            var roundPoints = cardGameUsersConnectionDto.UserConnection.RoundPoints;
-
-            var playerAttack = 0;
-            var playerDefense = 0;
-            var enemyAttack = 0;
-            var enemyDefense = 0;
+            var roundResults = new RoundResultDto
+            {
+                PlayerHitpoints = cardGameUsersConnectionDto.UserConnection.HitPoints,
+                EnemyHitpoints = cardGameUsersConnectionDto.EnemyUserConnection.HitPoints,
+                Round = cardGameUsersConnectionDto.UserConnection.Round,
+                Points = cardGameUsersConnectionDto.UserConnection.RoundPoints,
+                DamageDoneToEnemy = 0,
+                DamageDoneToPlayer = 0,
+                EnemyAttack = 0,
+                EnemyDefense = 0,
+                PlayerAttack = 0,
+                PlayerDefense = 0,
+                EnemyPlayedCards = enemyPlayedCards,
+                IsEndRound = false,
+                IsPlayerWinner = false
+            };
 
             userPlayedCards.ForEach(card =>
             {
-                playerAttack += card.AttackValue;
-                playerDefense += card.DefenseValue;
+                roundResults.PlayerAttack += card.AttackValue;
+                roundResults.PlayerDefense += card.DefenseValue;
             });
 
             enemyPlayedCards.ForEach(card =>
             {
-                enemyAttack += card.AttackValue;
-                enemyDefense += card.DefenseValue;
+                roundResults.EnemyAttack += card.AttackValue;
+                roundResults.EnemyDefense += card.DefenseValue;
             });
 
-            playerHitpoints += -(enemyAttack - playerDefense > 0 ? enemyAttack - playerDefense : 0);
-            enemyHitpoints += -(playerAttack - enemyDefense > 0 ? playerAttack - enemyDefense : 0);
+            roundResults.DamageDoneToPlayer = roundResults.EnemyAttack - roundResults.PlayerDefense > 0 ? roundResults.EnemyAttack - roundResults.PlayerDefense : 0;
+            roundResults.DamageDoneToEnemy = roundResults.PlayerAttack - roundResults.EnemyDefense > 0 ? roundResults.PlayerAttack - roundResults.EnemyDefense : 0;
 
-
+            roundResults.PlayerHitpoints += -roundResults.DamageDoneToPlayer;
+            roundResults.EnemyHitpoints += -roundResults.DamageDoneToEnemy;
 
             using var transaction = _cardGameGameRepository.CardGameGameRepositoryTransaction();
             try
             {
                 var playedCardIds = userPlayedCards.Select(c => c.Id);
-                await _cardGameGameRepository.UpdatePlayerHPAfterRoundEnds(cardGameUsersConnectionDto.UserConnection, playerHitpoints);
+                await _cardGameGameRepository.UpdatePlayerHPAfterRoundEnds(cardGameUsersConnectionDto.UserConnection, roundResults.PlayerHitpoints);
                 await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.UserConnection, playedCardIds);
 
-                if (cardGameUsersConnectionDto.UserConnection.Round >= CardGameConfig.MaxTurnsToEndRound || enemyHitpoints <= 0 || playerHitpoints <= 0)
+                if (cardGameUsersConnectionDto.UserConnection.Round >= CardGameConfig.MaxTurnsToEndRound || roundResults.EnemyHitpoints <= 0 || roundResults.PlayerHitpoints <= 0)
                 {
                     await _cardGameGameRepository.DeletePlayerHandCards(cardGameUsersConnectionDto.UserConnection);
-                    if (playerHitpoints > enemyHitpoints || enemyHitpoints <= 0)
+                    if (roundResults.PlayerHitpoints > roundResults.EnemyHitpoints || roundResults.EnemyHitpoints <= 0)
                     {
-                        roundPoints++;
-                        await _cardGameGameRepository.AddRoundPoints(cardGameUsersConnectionDto.UserConnection, roundPoints);
+                        roundResults.Points++;
+                        roundResults.IsPlayerWinner = true;
+                        await _cardGameGameRepository.AddRoundPoints(cardGameUsersConnectionDto.UserConnection, roundResults.Points);
                     }
-                    round = 0;
-                    playerHitpoints = CardGameConfig.UserHitPoints;
-                    enemyHitpoints = CardGameConfig.UserHitPoints;
+                    roundResults.Round = 0;
+                    roundResults.PlayerHitpoints = CardGameConfig.UserHitPoints;
+                    roundResults.EnemyHitpoints = CardGameConfig.UserHitPoints;
+                    roundResults.IsEndRound = true;
                     await _cardGameGameRepository.ResetPlayerParams(cardGameUsersConnectionDto.UserConnection);
                 }
 
@@ -166,13 +176,7 @@ namespace web_bite_server.Services.CardGame
                 throw new Exception("TRANSACTION ROLLED BACK");
             }
 
-            return new RoundResultDto
-            {
-                PlayerHitpoints = playerHitpoints,
-                EnemyHitpoints = enemyHitpoints,
-                Round = round,
-                Points = roundPoints
-            };
+            return roundResults;
         }
 
         // Sprawdza czy zagrane karty rzeczywiście istnieją
