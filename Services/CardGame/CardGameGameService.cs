@@ -162,8 +162,6 @@ namespace web_bite_server.Services.CardGame
                         await _cardGameGameRepository.AddRoundPoints(cardGameUsersConnectionDto.UserConnection, roundResults.Points);
                     }
                     roundResults.Round = 0;
-                    roundResults.PlayerHitpoints = CardGameConfig.UserHitPoints;
-                    roundResults.EnemyHitpoints = CardGameConfig.UserHitPoints;
                     roundResults.IsEndRound = true;
                     await _cardGameGameRepository.ResetPlayerParams(cardGameUsersConnectionDto.UserConnection);
                 }
