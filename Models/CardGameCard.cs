@@ -9,6 +9,7 @@ namespace web_bite_server.Models
         public int AttackValue { get; set; }
         public int DefenseValue { get; set; }
         public string Label { get; set; } = string.Empty;
+        public string FtpImageUrl { get; set; } = string.Empty;
         public CardGameCardAbility SpecialAbility { get; set; }
         public List<CardGameConnection> CardGamePlayerHand { get; } = [];
         public List<CardGameConnection> CardGamePlayerPlayed { get; } = [];

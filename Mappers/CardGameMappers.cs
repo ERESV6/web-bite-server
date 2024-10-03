@@ -14,7 +14,8 @@ namespace web_bite_server.Mappers
                 DefenseValue = cardGameCard.DefenseValue,
                 Id = cardGameCard.Id,
                 Label = cardGameCard.Label,
-                SpecialAbility = cardGameCard.SpecialAbility
+                SpecialAbility = cardGameCard.SpecialAbility,
+                FtpImageUrl = cardGameCard.FtpImageUrl
             };
         }
 

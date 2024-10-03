@@ -1,0 +1,30 @@
+1	GORĄCA HERBATA	0	0	+2 DO OBRONY DLA WSZYSTKICH KART	1	assets/images/card-images/dirty-socks.webp
+2	ROSÓŁ	0	0	+2 DO ATAKU DLA WSZYSTKICH KART	2	assets/images/card-images/dirty-socks.webp
+3	SKÓRKA OD BANANA	0	0	WYŁĄCZ KARTĘ PRZECIWNIKA Z NAJWIĘKSZĄ WARTOŚCIĄ ATAKU 	3	assets/images/card-images/dirty-socks.webp
+4	INDYJSKI STREET FOOD	0	0	WYŁĄCZ KARTĘ PRZECIWNIKA Z NAJWIĘKSZĄ WARTOŚCIĄ OBRONY 	4	assets/images/card-images/dirty-socks.webp
+5	CHECK ENGINE	0	0	-2 DO OBRONY DLA WSZYSTKICH KART PRZECIWNIKA	5	assets/images/card-images/dirty-socks.webp
+7	SCHODY NA 3 PIĘTRO	0	0	-2 DO ATAKU DLA WSZYSTKICH KART PRZECIWNIKA	6	assets/images/card-images/dirty-socks.webp
+8	THE BOYS	0	0	PODWOJENIE BAZOWEJ WARTOŚCI ATAKU SĄSIEDNICH KART	7	assets/images/card-images/dirty-socks.webp
+9	SHIELD WALL	0	0	PODWOJENIE BAZOWEJ WARTOŚCI OBRONY SĄSIEDNICH KART	8	assets/images/card-images/dirty-socks.webp
+10	POZYCJA EMBRIONALNA	0	10	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+11	POZYCJA EMBRIONALNA	0	10	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+13	NAGRZANY KOC	1	9	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+14	NAGRZANY KOC	1	9	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+15	STERTA UBRAŃ	2	8	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+16	STERTA UBRAŃ	2	8	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+17	ZBUK	3	7	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+18	ZBUK	3	7	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+19	ŻONOBIJKA	4	6	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+20	ŻONOBIJKA	4	6	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+22	ĆWIERĆSTRZAŁOWIEC	5	5	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+23	ĆWIERĆSTRZAŁOWIEC	5	5	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+25	BRUDNA SKARPETA	6	4	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+27	BRUDNA SKARPETA	6	4	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+28	POKROJONA CEBULA	7	3	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+29	POKROJONA CEBULA	7	3	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+30	WYBITE SZAMBO	8	2	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+31	WYBITE SZAMBO	8	2	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+32	SPŁATA KREDYTU	9	1	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+33	SPŁATA KREDYTU	9	1	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+34	LA CHANCLA	10	0	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
+35	LA CHANCLA	10	0	JEDNOSTKA	0	assets/images/card-images/dirty-socks.webp
