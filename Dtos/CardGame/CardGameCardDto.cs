@@ -17,6 +17,7 @@ namespace web_bite_server.Dtos.CardGame
         public string Label { get; set; } = string.Empty;
         [Required]
         public string FtpImageUrl { get; set; } = string.Empty;
+        public bool WasDestroyedByAnotherCard { get; set; } = false;
         [Required]
         public CardGameCardAbility SpecialAbility { get; set; }
 

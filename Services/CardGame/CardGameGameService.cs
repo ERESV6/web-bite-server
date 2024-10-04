@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using Microsoft.AspNetCore.SignalR;
 using web_bite_server.Constants;
 using web_bite_server.Dtos.CardGame;
@@ -130,8 +129,13 @@ namespace web_bite_server.Services.CardGame
                 IsPlayerWinner = false
             };
 
-            Dictionary<CardGameCardAbility, bool> playerSpecialCards = GenerateSpecialCardsDictionary(roundResults.PlayerPlayedCards);
-            Dictionary<CardGameCardAbility, bool> enemySpecialCards = GenerateSpecialCardsDictionary(roundResults.EnemyPlayedCards);
+            Dictionary<CardGameCardAbility, int> playerSpecialCards = GenerateSpecialCardsDictionary(roundResults.PlayerPlayedCards);
+            Dictionary<CardGameCardAbility, int> enemySpecialCards = GenerateSpecialCardsDictionary(roundResults.EnemyPlayedCards);
+
+            roundResults.PlayerPlayedCards = DoubleAttackDefense(roundResults.PlayerPlayedCards, playerSpecialCards, CardGameCardAbility.DoubleCardAttackValue);
+            roundResults.PlayerPlayedCards = DoubleAttackDefense(roundResults.PlayerPlayedCards, playerSpecialCards, CardGameCardAbility.DoubleCardDefenseValue);
+            roundResults.EnemyPlayedCards = DoubleAttackDefense(roundResults.EnemyPlayedCards, enemySpecialCards, CardGameCardAbility.DoubleCardAttackValue);
+            roundResults.EnemyPlayedCards = DoubleAttackDefense(roundResults.EnemyPlayedCards, enemySpecialCards, CardGameCardAbility.DoubleCardDefenseValue);
 
             if (playerSpecialCards.ContainsKey(CardGameCardAbility.AddAttackToAll) || playerSpecialCards.ContainsKey(CardGameCardAbility.AddDefenseToAll))
             {
@@ -158,14 +162,20 @@ namespace web_bite_server.Services.CardGame
 
             roundResults.PlayerPlayedCards.ForEach(card =>
             {
-                roundResults.PlayerAttack += card.AttackValue;
-                roundResults.PlayerDefense += card.DefenseValue;
+                if (card.WasDestroyedByAnotherCard != true)
+                {
+                    roundResults.PlayerAttack += card.AttackValue;
+                    roundResults.PlayerDefense += card.DefenseValue;
+                }
             });
 
             roundResults.EnemyPlayedCards.ForEach(card =>
             {
-                roundResults.EnemyAttack += card.AttackValue;
-                roundResults.EnemyDefense += card.DefenseValue;
+                if (card.WasDestroyedByAnotherCard != true)
+                {
+                    roundResults.EnemyAttack += card.AttackValue;
+                    roundResults.EnemyDefense += card.DefenseValue;
+                }
             });
 
             roundResults.DamageDoneToPlayer = roundResults.EnemyAttack - roundResults.PlayerDefense > 0 ? roundResults.EnemyAttack - roundResults.PlayerDefense : 0;
@@ -225,20 +235,21 @@ namespace web_bite_server.Services.CardGame
             return cardGameHand;
         }
 
-        private static Dictionary<CardGameCardAbility, bool> GenerateSpecialCardsDictionary(List<CardGameCardDto> playedCards)
+        private static Dictionary<CardGameCardAbility, int> GenerateSpecialCardsDictionary(List<CardGameCardDto> playedCards)
         {
-            Dictionary<CardGameCardAbility, bool> specialCards = [];
-            playedCards.ForEach(i =>
+            Dictionary<CardGameCardAbility, int> specialCards = [];
+            for (int index = 0; index < playedCards.Count; index++)
             {
-                if (i.SpecialAbility != 0)
+                var item = playedCards[index];
+                if (item.SpecialAbility != 0)
                 {
-                    specialCards.Add(i.SpecialAbility, true);
+                    specialCards.Add(item.SpecialAbility, index);
                 }
-            });
+            }
             return specialCards;
         }
 
-        private static List<CardGameCardDto> BuffAttackOrDefenseToAllCards(List<CardGameCardDto> playedCards, Dictionary<CardGameCardAbility, bool> specialCards)
+        private static List<CardGameCardDto> BuffAttackOrDefenseToAllCards(List<CardGameCardDto> playedCards, Dictionary<CardGameCardAbility, int> specialCards)
         {
             return playedCards.Select(card =>
             {
@@ -248,7 +259,7 @@ namespace web_bite_server.Services.CardGame
             }).ToList();
         }
 
-        private static List<CardGameCardDto> DebuffAttackOrDefenseToAllCards(List<CardGameCardDto> playedCards, Dictionary<CardGameCardAbility, bool> specialCards)
+        private static List<CardGameCardDto> DebuffAttackOrDefenseToAllCards(List<CardGameCardDto> playedCards, Dictionary<CardGameCardAbility, int> specialCards)
         {
             return playedCards.Select(card =>
             {
@@ -261,27 +272,70 @@ namespace web_bite_server.Services.CardGame
         private static List<CardGameCardDto> DisableStrongestAttackCard(List<CardGameCardDto> playedCards)
         {
             var cardWithHighestValue = playedCards.OrderByDescending(i => i.AttackValue).First();
-            playedCards.RemoveAll(i => i.AttackValue == cardWithHighestValue.AttackValue);
-            return playedCards;
+            return playedCards.Select(item =>
+            {
+                if (item.AttackValue == cardWithHighestValue.AttackValue)
+                {
+                    item.WasDestroyedByAnotherCard = true;
+                }
+                return item;
+            }).ToList();
         }
 
         private static List<CardGameCardDto> DisableStrongestDefenseCard(List<CardGameCardDto> playedCards)
         {
             var cardWithHighestValue = playedCards.OrderByDescending(i => i.DefenseValue).First();
-            playedCards.RemoveAll(i => i.DefenseValue == cardWithHighestValue.DefenseValue);
-            return playedCards;
+            return playedCards.Select(item =>
+            {
+                if (item.DefenseValue == cardWithHighestValue.DefenseValue)
+                {
+                    item.WasDestroyedByAnotherCard = true;
+                }
+                return item;
+            }).ToList();
         }
 
-        private static List<CardGameCardDto> DisableStrongestCard(List<CardGameCardDto> playedCards, Dictionary<CardGameCardAbility, bool> specialCards)
+        private static List<CardGameCardDto> DisableStrongestCard(List<CardGameCardDto> playedCards, Dictionary<CardGameCardAbility, int> specialCards)
         {
             if (specialCards.ContainsKey(CardGameCardAbility.DisableStrongestAttackCard))
             {
                 playedCards = DisableStrongestAttackCard(playedCards);
             }
-
             if (specialCards.ContainsKey(CardGameCardAbility.DisableStrongestDefenseCard))
             {
                 playedCards = DisableStrongestDefenseCard(playedCards);
+            }
+            return playedCards;
+        }
+
+        private static List<CardGameCardDto> DoubleAttackDefense(List<CardGameCardDto> playedCards, Dictionary<CardGameCardAbility, int> specialCards, CardGameCardAbility cardGameCardAbility)
+        {
+            if (specialCards.TryGetValue(cardGameCardAbility, out int cardIndex))
+            {
+                var leftCard = playedCards[cardIndex - 1];
+                var rightCard = playedCards[cardIndex + 1];
+                if (leftCard != null)
+                {
+                    if (CardGameCardAbility.DoubleCardAttackValue == cardGameCardAbility)
+                    {
+                        leftCard.AttackValue *= 2;
+                    }
+                    else
+                    {
+                        leftCard.DefenseValue *= 2;
+                    }
+                }
+                if (rightCard != null)
+                {
+                    if (CardGameCardAbility.DoubleCardAttackValue == cardGameCardAbility)
+                    {
+                        rightCard.AttackValue *= 2;
+                    }
+                    else
+                    {
+                        rightCard.DefenseValue *= 2;
+                    }
+                }
             }
             return playedCards;
         }
