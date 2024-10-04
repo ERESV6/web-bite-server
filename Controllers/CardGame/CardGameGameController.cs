@@ -82,6 +82,25 @@ namespace web_bite_server.Controllers.CardGame
         {
             var connectedUserCardGameConnection = await _cardGameConnectionService.CheckCardGameConnection(HttpContext.User);
             var roundResult = await _cardGameGameService.CalculateRoundResult(connectedUserCardGameConnection);
+            await _hubContext.Clients.Client(connectedUserCardGameConnection.EnemyUserConnection.ConnectionId).CalculatedRoundResults(new RoundResultDto
+            {
+                PlayerHitpoints = roundResult.EnemyHitpoints,
+                EnemyHitpoints = roundResult.PlayerHitpoints,
+                Round = roundResult.Round,
+                PlayerPoints = roundResult.EnemyPoints,
+                EnemyPoints = roundResult.PlayerPoints,
+                DamageDoneToEnemy = roundResult.DamageDoneToPlayer,
+                DamageDoneToPlayer = roundResult.DamageDoneToEnemy,
+                EnemyAttack = roundResult.PlayerAttack,
+                EnemyDefense = roundResult.PlayerDefense,
+                PlayerAttack = roundResult.EnemyAttack,
+                PlayerDefense = roundResult.EnemyDefense,
+                PlayerPlayedCards = roundResult.EnemyPlayedCards,
+                EnemyPlayedCards = roundResult.PlayerPlayedCards,
+                IsEndRound = roundResult.IsEndRound,
+                IsPlayerWinner = roundResult.IsEnemyWinner,
+                IsEnemyWinner = roundResult.IsPlayerWinner
+            });
             return Ok(roundResult);
         }
     }

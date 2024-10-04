@@ -96,7 +96,7 @@ namespace web_bite_server.Services.CardGame
         // Sprawdza zagrane karty obu graczy i zlicza odebrane punkty zdrowia
         public async Task<RoundResultDto> CalculateRoundResult(CardGameUsersConnectionDto cardGameUsersConnectionDto)
         {
-            if (!cardGameUsersConnectionDto.UserConnection.IsEndTurn)
+            if (!cardGameUsersConnectionDto.UserConnection.IsEndTurn || !cardGameUsersConnectionDto.EnemyUserConnection.IsEndTurn)
             {
                 throw new BadHttpRequestException("CANT CALCULATE ROUND RESULT WHEN TURN IS IN PROGRESS");
             }
@@ -116,7 +116,8 @@ namespace web_bite_server.Services.CardGame
                 PlayerHitpoints = cardGameUsersConnectionDto.UserConnection.HitPoints,
                 EnemyHitpoints = cardGameUsersConnectionDto.EnemyUserConnection.HitPoints,
                 Round = cardGameUsersConnectionDto.UserConnection.Round,
-                Points = cardGameUsersConnectionDto.UserConnection.RoundPoints,
+                PlayerPoints = cardGameUsersConnectionDto.UserConnection.RoundPoints,
+                EnemyPoints = cardGameUsersConnectionDto.EnemyUserConnection.RoundPoints,
                 DamageDoneToEnemy = 0,
                 DamageDoneToPlayer = 0,
                 EnemyAttack = 0,
@@ -124,9 +125,10 @@ namespace web_bite_server.Services.CardGame
                 PlayerAttack = 0,
                 PlayerDefense = 0,
                 PlayerPlayedCards = [.. playerPlayedCards],
-                EnemyPlayedCards = enemyPlayedCards,
+                EnemyPlayedCards = [.. enemyPlayedCards],
                 IsEndRound = false,
-                IsPlayerWinner = false
+                IsPlayerWinner = false,
+                IsEnemyWinner = false
             };
 
             Dictionary<CardGameCardAbility, int> playerSpecialCards = GenerateSpecialCardsDictionary(roundResults.PlayerPlayedCards);
@@ -187,22 +189,32 @@ namespace web_bite_server.Services.CardGame
             using var transaction = _cardGameGameRepository.CardGameGameRepositoryTransaction();
             try
             {
-                var playedCardIds = playerPlayedCards.Select(c => c.Id);
-                await _cardGameGameRepository.UpdatePlayerHPAfterRoundEnds(cardGameUsersConnectionDto.UserConnection, roundResults.PlayerHitpoints);
-                await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.UserConnection, playedCardIds);
+                var playerCardIds = playerPlayedCards.Select(c => c.Id);
+                var enemyCardIds = enemyPlayedCards.Select(c => c.Id);
+
+                await _cardGameGameRepository.UpdatePlayersHPAfterRoundEnds(cardGameUsersConnectionDto, roundResults);
+                await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.UserConnection, playerCardIds);
+                await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.EnemyUserConnection, enemyCardIds);
 
                 if (cardGameUsersConnectionDto.UserConnection.Round >= CardGameConfig.MaxTurnsToEndRound || roundResults.EnemyHitpoints <= 0 || roundResults.PlayerHitpoints <= 0)
                 {
                     await _cardGameGameRepository.DeletePlayerHandCards(cardGameUsersConnectionDto.UserConnection);
-                    if (roundResults.PlayerHitpoints > roundResults.EnemyHitpoints || roundResults.EnemyHitpoints <= 0)
+                    await _cardGameGameRepository.DeletePlayerHandCards(cardGameUsersConnectionDto.EnemyUserConnection);
+                    if (roundResults.PlayerHitpoints > roundResults.EnemyHitpoints || (roundResults.EnemyHitpoints <= 0 && roundResults.EnemyHitpoints > 0))
                     {
-                        roundResults.Points++;
+                        roundResults.PlayerPoints++;
                         roundResults.IsPlayerWinner = true;
-                        await _cardGameGameRepository.AddRoundPoints(cardGameUsersConnectionDto.UserConnection, roundResults.Points);
+                        await _cardGameGameRepository.AddRoundPoints(cardGameUsersConnectionDto.UserConnection, roundResults.PlayerPoints);
+                    }
+                    else if (roundResults.PlayerHitpoints < roundResults.EnemyHitpoints || (roundResults.PlayerHitpoints <= 0 && roundResults.EnemyHitpoints > 0))
+                    {
+                        roundResults.EnemyPoints++;
+                        roundResults.IsEnemyWinner = true;
+                        await _cardGameGameRepository.AddRoundPoints(cardGameUsersConnectionDto.EnemyUserConnection, roundResults.EnemyPoints);
                     }
                     roundResults.Round = 0;
                     roundResults.IsEndRound = true;
-                    await _cardGameGameRepository.ResetPlayerParams(cardGameUsersConnectionDto.UserConnection);
+                    await _cardGameGameRepository.ResetPlayersParams(cardGameUsersConnectionDto);
                 }
 
                 transaction.Commit();
@@ -212,7 +224,6 @@ namespace web_bite_server.Services.CardGame
                 transaction.Rollback();
                 throw new Exception("TRANSACTION ROLLED BACK");
             }
-
             return roundResults;
         }
 

@@ -13,7 +13,9 @@ namespace web_bite_server.Dtos.CardGame
         [Required]
         public int Round { get; set; }
         [Required]
-        public int Points { get; set; }
+        public int PlayerPoints { get; set; }
+        [Required]
+        public int EnemyPoints { get; set; }
         [Required]
         public int PlayerAttack { get; set; }
         [Required]
@@ -32,5 +34,6 @@ namespace web_bite_server.Dtos.CardGame
         public List<CardGameCardDto> EnemyPlayedCards { get; set; } = [];
         public bool IsEndRound { get; set; } = false;
         public bool IsPlayerWinner { get; set; } = false;
+        public bool IsEnemyWinner { get; set; } = false;
     }
 }

@@ -15,5 +15,6 @@ namespace web_bite_server.interfaces.CardGame
         Task PlayCard(int playedCardsNumber);
         Task EndTurn();
         Task SendRound(int round);
+        Task CalculatedRoundResults(RoundResultDto roundResultDto);
     }
 }

@@ -35,18 +35,21 @@ namespace web_bite_server.Repository
         }
 
         // Aktualizuj punkty zdrowia gracza po zakończeniu tury
-        public async Task UpdatePlayerHPAfterRoundEnds(CardGameConnection userConnection, int playerHitpoints)
+        public async Task UpdatePlayersHPAfterRoundEnds(CardGameUsersConnectionDto cardGameUsersConnectionDto, RoundResultDto? roundResults)
         {
-            userConnection.HitPoints = playerHitpoints;
+            cardGameUsersConnectionDto.UserConnection.HitPoints = roundResults?.PlayerHitpoints ?? 0;
+            cardGameUsersConnectionDto.EnemyUserConnection.HitPoints = roundResults?.EnemyHitpoints ?? 0;
             await _dbContext.SaveChangesAsync();
         }
 
 
         // Aktualizuj parametry gracza po zakończeniu rundy
-        public async Task ResetPlayerParams(CardGameConnection userConnection)
+        public async Task ResetPlayersParams(CardGameUsersConnectionDto cardGameUsersConnectionDto)
         {
-            userConnection.Round = 0;
-            userConnection.HitPoints = CardGameConfig.UserHitPoints;
+            cardGameUsersConnectionDto.UserConnection.Round = 0;
+            cardGameUsersConnectionDto.UserConnection.HitPoints = CardGameConfig.UserHitPoints;
+            cardGameUsersConnectionDto.EnemyUserConnection.Round = 0;
+            cardGameUsersConnectionDto.EnemyUserConnection.HitPoints = CardGameConfig.UserHitPoints;
             await _dbContext.SaveChangesAsync();
         }
 
