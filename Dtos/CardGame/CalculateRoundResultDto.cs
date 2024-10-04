@@ -27,6 +27,8 @@ namespace web_bite_server.Dtos.CardGame
         [Required]
         public int DamageDoneToPlayer { get; set; }
         [Required]
+        public List<CardGameCardDto> PlayerPlayedCards { get; set; } = [];
+        [Required]
         public List<CardGameCardDto> EnemyPlayedCards { get; set; } = [];
         public bool IsEndRound { get; set; } = false;
         public bool IsPlayerWinner { get; set; } = false;

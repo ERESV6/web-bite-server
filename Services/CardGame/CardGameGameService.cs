@@ -1,6 +1,8 @@
+using System.Linq.Expressions;
 using Microsoft.AspNetCore.SignalR;
 using web_bite_server.Constants;
 using web_bite_server.Dtos.CardGame;
+using web_bite_server.Enums;
 using web_bite_server.Hubs;
 using web_bite_server.interfaces.CardGame;
 using web_bite_server.Models;
@@ -99,8 +101,8 @@ namespace web_bite_server.Services.CardGame
             {
                 throw new BadHttpRequestException("CANT CALCULATE ROUND RESULT WHEN TURN IS IN PROGRESS");
             }
-            var userPlayedCards = await _cardGameGameRepository.GetUserCardGamePlayedCards(cardGameUsersConnectionDto.UserConnection);
-            if (userPlayedCards.Count == 0)
+            var playerPlayedCards = await _cardGameGameRepository.GetUserCardGamePlayedCards(cardGameUsersConnectionDto.UserConnection);
+            if (playerPlayedCards.Count == 0)
             {
                 throw new BadHttpRequestException("USER DID NOT PLAY ANY CARD");
             }
@@ -122,18 +124,45 @@ namespace web_bite_server.Services.CardGame
                 EnemyDefense = 0,
                 PlayerAttack = 0,
                 PlayerDefense = 0,
+                PlayerPlayedCards = [.. playerPlayedCards],
                 EnemyPlayedCards = enemyPlayedCards,
                 IsEndRound = false,
                 IsPlayerWinner = false
             };
 
-            userPlayedCards.ForEach(card =>
+            Dictionary<CardGameCardAbility, bool> playerSpecialCards = GenerateSpecialCardsDictionary(roundResults.PlayerPlayedCards);
+            Dictionary<CardGameCardAbility, bool> enemySpecialCards = GenerateSpecialCardsDictionary(roundResults.EnemyPlayedCards);
+
+            if (playerSpecialCards.ContainsKey(CardGameCardAbility.AddAttackToAll) || playerSpecialCards.ContainsKey(CardGameCardAbility.AddDefenseToAll))
+            {
+                roundResults.PlayerPlayedCards = BuffAttackOrDefenseToAllCards(roundResults.PlayerPlayedCards, playerSpecialCards);
+            }
+
+            if (enemySpecialCards.ContainsKey(CardGameCardAbility.AddAttackToAll) || enemySpecialCards.ContainsKey(CardGameCardAbility.AddDefenseToAll))
+            {
+                roundResults.EnemyPlayedCards = BuffAttackOrDefenseToAllCards(roundResults.EnemyPlayedCards, enemySpecialCards);
+            }
+
+            if (enemySpecialCards.ContainsKey(CardGameCardAbility.ReduceAttackToAll) || enemySpecialCards.ContainsKey(CardGameCardAbility.ReduceDefenseToAll))
+            {
+                roundResults.PlayerPlayedCards = DebuffAttackOrDefenseToAllCards(roundResults.PlayerPlayedCards, enemySpecialCards);
+            }
+
+            if (playerSpecialCards.ContainsKey(CardGameCardAbility.ReduceAttackToAll) || playerSpecialCards.ContainsKey(CardGameCardAbility.ReduceDefenseToAll))
+            {
+                roundResults.EnemyPlayedCards = DebuffAttackOrDefenseToAllCards(roundResults.EnemyPlayedCards, playerSpecialCards);
+            }
+
+            roundResults.PlayerPlayedCards = DisableStrongestCard(roundResults.PlayerPlayedCards, enemySpecialCards);
+            roundResults.EnemyPlayedCards = DisableStrongestCard(roundResults.EnemyPlayedCards, playerSpecialCards);
+
+            roundResults.PlayerPlayedCards.ForEach(card =>
             {
                 roundResults.PlayerAttack += card.AttackValue;
                 roundResults.PlayerDefense += card.DefenseValue;
             });
 
-            enemyPlayedCards.ForEach(card =>
+            roundResults.EnemyPlayedCards.ForEach(card =>
             {
                 roundResults.EnemyAttack += card.AttackValue;
                 roundResults.EnemyDefense += card.DefenseValue;
@@ -148,7 +177,7 @@ namespace web_bite_server.Services.CardGame
             using var transaction = _cardGameGameRepository.CardGameGameRepositoryTransaction();
             try
             {
-                var playedCardIds = userPlayedCards.Select(c => c.Id);
+                var playedCardIds = playerPlayedCards.Select(c => c.Id);
                 await _cardGameGameRepository.UpdatePlayerHPAfterRoundEnds(cardGameUsersConnectionDto.UserConnection, roundResults.PlayerHitpoints);
                 await _cardGameGameRepository.DeletePlayedCards(cardGameUsersConnectionDto.UserConnection, playedCardIds);
 
@@ -194,6 +223,67 @@ namespace web_bite_server.Services.CardGame
                 throw new BadHttpRequestException("SOME CARD IDS DOESN'T EXISTS");
             }
             return cardGameHand;
+        }
+
+        private static Dictionary<CardGameCardAbility, bool> GenerateSpecialCardsDictionary(List<CardGameCardDto> playedCards)
+        {
+            Dictionary<CardGameCardAbility, bool> specialCards = [];
+            playedCards.ForEach(i =>
+            {
+                if (i.SpecialAbility != 0)
+                {
+                    specialCards.Add(i.SpecialAbility, true);
+                }
+            });
+            return specialCards;
+        }
+
+        private static List<CardGameCardDto> BuffAttackOrDefenseToAllCards(List<CardGameCardDto> playedCards, Dictionary<CardGameCardAbility, bool> specialCards)
+        {
+            return playedCards.Select(card =>
+            {
+                card.AttackValue = specialCards.ContainsKey(CardGameCardAbility.AddAttackToAll) ? card.AttackValue + 2 : card.AttackValue;
+                card.DefenseValue = specialCards.ContainsKey(CardGameCardAbility.AddDefenseToAll) ? card.DefenseValue + 2 : card.DefenseValue;
+                return card;
+            }).ToList();
+        }
+
+        private static List<CardGameCardDto> DebuffAttackOrDefenseToAllCards(List<CardGameCardDto> playedCards, Dictionary<CardGameCardAbility, bool> specialCards)
+        {
+            return playedCards.Select(card =>
+            {
+                card.AttackValue = specialCards.ContainsKey(CardGameCardAbility.ReduceAttackToAll) ? card.AttackValue - 2 > 0 ? card.AttackValue - 2 : 0 : card.AttackValue;
+                card.DefenseValue = specialCards.ContainsKey(CardGameCardAbility.ReduceDefenseToAll) ? card.DefenseValue - 2 > 0 ? card.DefenseValue - 2 : 0 : card.DefenseValue;
+                return card;
+            }).ToList();
+        }
+
+        private static List<CardGameCardDto> DisableStrongestAttackCard(List<CardGameCardDto> playedCards)
+        {
+            var cardWithHighestValue = playedCards.OrderByDescending(i => i.AttackValue).First();
+            playedCards.RemoveAll(i => i.AttackValue == cardWithHighestValue.AttackValue);
+            return playedCards;
+        }
+
+        private static List<CardGameCardDto> DisableStrongestDefenseCard(List<CardGameCardDto> playedCards)
+        {
+            var cardWithHighestValue = playedCards.OrderByDescending(i => i.DefenseValue).First();
+            playedCards.RemoveAll(i => i.DefenseValue == cardWithHighestValue.DefenseValue);
+            return playedCards;
+        }
+
+        private static List<CardGameCardDto> DisableStrongestCard(List<CardGameCardDto> playedCards, Dictionary<CardGameCardAbility, bool> specialCards)
+        {
+            if (specialCards.ContainsKey(CardGameCardAbility.DisableStrongestAttackCard))
+            {
+                playedCards = DisableStrongestAttackCard(playedCards);
+            }
+
+            if (specialCards.ContainsKey(CardGameCardAbility.DisableStrongestDefenseCard))
+            {
+                playedCards = DisableStrongestDefenseCard(playedCards);
+            }
+            return playedCards;
         }
     }
 }

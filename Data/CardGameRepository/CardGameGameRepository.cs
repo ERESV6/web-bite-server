@@ -101,8 +101,7 @@ namespace web_bite_server.Repository
                 .Select(i => i.CardGameCard)
                 .Select(c => c.ToCardGameCardDto())
                 .ToListAsync();
-
-            return userCardGameHand;
+            return [.. userCardGameHand.OrderBy(l => cardGameIds.IndexOf(l.Id))];
         }
 
         // Dodaj zagrane karty użytkownika, ustaw flagę zakończenia tury na true

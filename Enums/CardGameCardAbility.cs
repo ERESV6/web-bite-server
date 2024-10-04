@@ -3,12 +3,12 @@ namespace web_bite_server.Enums
     public enum CardGameCardAbility
     {
         None,
-        AddAttackToAll,
         AddDefenseToAll,
-        ReduceAttackToAll,
-        ReduceDefenseToAll,
+        AddAttackToAll,
         DisableStrongestAttackCard,
         DisableStrongestDefenseCard,
+        ReduceDefenseToAll,
+        ReduceAttackToAll,
         DoubleCardAttackValue,
         DoubleCardDefenseValue
     }
