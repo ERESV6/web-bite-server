@@ -323,8 +323,8 @@ namespace web_bite_server.Services.CardGame
         {
             if (specialCards.TryGetValue(cardGameCardAbility, out int cardIndex))
             {
-                var leftCard = playedCards[cardIndex - 1];
-                var rightCard = playedCards[cardIndex + 1];
+                var leftCard = cardIndex - 1 < 0 ? null : playedCards[cardIndex - 1];
+                var rightCard = cardIndex + 1 > playedCards.Count - 1 ? null : playedCards[cardIndex + 1];
                 if (leftCard != null)
                 {
                     if (CardGameCardAbility.DoubleCardAttackValue == cardGameCardAbility)
